@@ -722,14 +722,66 @@
         <div class="modal-header"><span>💰 Nueva Venta</span><button class="modal-close" onclick="closeModal('modal-venta')">✕</button></div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group"><label>Fecha *</label><input type="date" id="v-fecha"></div>
-            <div class="form-group"><label>Cliente *</label><select id="v-cliente"><option value="">Seleccionar cliente...</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="v-fecha"></div><div class="form-group">
+              <label>CLIENTE *</label>
+              <select id="v-cliente" onchange="handleClienteSelect(this.value)">
+                <option value="">Seleccionar cliente...</option>
+                <option value="__nuevo__">+ Agregar cliente...</option>
+              </select>
+            </div><select id="v-cliente"><option value="">Seleccionar cliente...</option></select></div>
             <div class="form-group"><label>Tipo de Venta *</label><select id="v-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
             <div class="form-group"><label>Total ($)</label><input type="number" id="v-total" step="0.01" placeholder="0.00"></div>
             <div class="form-group"><label>Costo ($)</label><input type="number" id="v-costo" step="0.01" placeholder="0.00"></div>
             <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="v-notas" rows="2" placeholder="Ej: Se vendió a cuenta de carne 20 kg..."></textarea></div>
           </div>
         </div>
+      <div class="modal-overlay" id="modal-nuevo-cliente">
+      <div class="modal">
+        <div class="modal-header">
+          <span>👤 Nuevo Cliente</span>
+          <button class="modal-close" onclick="closeModal('modal-nuevo-cliente')">✕</button>
+        </div>
+    
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group" style="grid-column:1/-1">
+              <label>Nombre *</label>
+              <input type="text" id="nc-nombre" placeholder="Ej: José López">
+            </div>
+    
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="text" id="nc-telefono" placeholder="Ej: 999999999">
+            </div>
+    
+            <div class="form-group">
+              <label>Correo</label>
+              <input type="email" id="nc-email" placeholder="cliente@email.com">
+            </div>
+    
+            <div class="form-group" style="grid-column:1/-1">
+              <label>Dirección</label>
+              <input type="text" id="nc-direccion" placeholder="Dirección">
+            </div>
+          </div>
+        </div>
+    
+        <div class="modal-footer">
+          <button
+            class="btn"
+            style="background:var(--crema-oscuro);color:var(--marron-oscuro)"
+            onclick="closeModal('modal-nuevo-cliente')">
+            Cancelar
+          </button>
+    
+          <button
+            class="btn btn-primary"
+            onclick="saveClienteNuevo()">
+            💾 Guardar
+          </button>
+        </div>
+      </div>
+    </div>
         <div class="modal-footer">
           <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-venta')">Cancelar</button>
           <button class="btn btn-primary" onclick="saveVenta()">💾 Guardar</button>
@@ -1587,7 +1639,82 @@ async function updateParto() {
 
     populateVentaSelect();
   }
+function handleClienteSelect(value) {
+  if (value === '__nuevo__') {
+    closeModal('modal-venta');
+    openModal('modal-nuevo-cliente');
+    document.getElementById('v-cliente').value = '';
+    return;
+  }
+}
 
+async function saveClienteNuevo() {
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  const telefono = document.getElementById('nc-telefono').value.trim();
+  const email = document.getElementById('nc-email').value.trim();
+  const direccion = document.getElementById('nc-direccion').value.trim();
+
+  if (!nombre) {
+    showToast('El nombre del cliente es obligatorio', 'error');
+    return;
+  }
+
+  const payload = {
+    nombre,
+    telefono: telefono || null,
+    email: email || null,
+    direccion: direccion || null
+  };
+
+  const { data, error } = await db
+    .from('clientes')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    showToast('Error guardando cliente: ' + error.message, 'error');
+    return;
+  }
+
+  showToast('✅ Cliente guardado');
+
+  // volver a cargar el select de clientes
+ async function loadClientes() {
+  const { data, error } = await db.from('clientes').select('*').order('nombre');
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const select = document.getElementById('v-cliente');
+  if (!select) return;
+
+  const valorActual = select.value;
+
+  select.innerHTML = `
+    <option value="">Seleccionar cliente...</option>
+    <option value="__nuevo__">+ Agregar cliente...</option>
+    ${data.map(c => `
+      <option value="${c.id}">${c.nombre}</option>
+    `).join('')}
+  `;
+
+  if (valorActual) {
+    select.value = valorActual;
+  }
+}
+
+  // seleccionar el cliente recién creado
+  const select = document.getElementById('v-cliente');
+  if (select) {
+    select.value = data.id;
+  }
+
+  closeModal('modal-nuevo-cliente');
+  openModal('modal-venta');
+}
   async function saveVenta() {
     const payload = {
       fecha: document.getElementById('v-fecha').value || null,
