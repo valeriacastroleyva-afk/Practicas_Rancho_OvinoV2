@@ -1603,7 +1603,18 @@ async function updateParto() {
     closeModal('modal-edit-salud');
     await refreshAppData();
   }
+function handleClienteSelect(value) {
+  if (value !== '__nuevo__') return;
 
+  const select = document.getElementById('v-cliente');
+
+  if (select) {
+    select.value = '';
+  }
+
+  closeModal('modal-venta');
+  openModal('modal-nuevo-cliente');
+}
   // ============ VENTAS ============
   async function loadVentas() {
     loading('table-ventas');
@@ -1660,7 +1671,7 @@ async function saveClienteNuevo() {
   }
 
   const payload = {
-    nombre,
+    nombre: nombre,
     telefono: telefono || null,
     email: email || null,
     direccion: direccion || null
@@ -1673,35 +1684,67 @@ async function saveClienteNuevo() {
     .single();
 
   if (error) {
+    console.error('Error guardando cliente:', error);
     showToast('Error guardando cliente: ' + error.message, 'error');
     return;
   }
 
   showToast('✅ Cliente guardado');
 
-  // volver a cargar el select de clientes
- async function loadClientes() {
-  const { data, error } = await db.from('clientes').select('*').order('nombre');
+  // Actualizar la lista de clientes
+  await loadClientes();
+
+  // Seleccionar automáticamente el cliente recién creado
+  const select = document.getElementById('v-cliente');
+
+  if (select && data) {
+    select.value = data.id;
+  }
+
+  closeModal('modal-nuevo-cliente');
+  openModal('modal-venta');
+
+  // Limpiar el formulario de nuevo cliente
+  document.getElementById('nc-nombre').value = '';
+  document.getElementById('nc-telefono').value = '';
+  document.getElementById('nc-email').value = '';
+  document.getElementById('nc-direccion').value = '';
+}
+
+
+async function loadClientes() {
+  const { data, error } = await db
+    .from('clientes')
+    .select('*')
+    .order('nombre');
 
   if (error) {
-    console.error(error);
+    console.error('Error cargando clientes:', error);
+    showToast('Error cargando clientes: ' + error.message, 'error');
     return;
   }
 
   const select = document.getElementById('v-cliente');
-  if (!select) return;
+
+  if (!select) {
+    console.error('No existe el select v-cliente');
+    return;
+  }
 
   const valorActual = select.value;
 
   select.innerHTML = `
     <option value="">Seleccionar cliente...</option>
     <option value="__nuevo__">+ Agregar cliente...</option>
-    ${data.map(c => `
-      <option value="${c.id}">${c.nombre}</option>
+    ${(data || []).map(cliente => `
+      <option value="${cliente.id}">
+        ${cliente.nombre}
+      </option>
     `).join('')}
   `;
 
-  if (valorActual) {
+  // Conserva el valor si todavía existe
+  if (valorActual && valorActual !== '__nuevo__') {
     select.value = valorActual;
   }
 }
