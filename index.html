@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rancho Ovino — Sistema de Gestión</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1B5E35">
+  <link rel="apple-touch-icon" href="/Practicas_Rancho_Ovino/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Rancho Ovino">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tierra: #2E6B3E;
+      --tierra-claro: #3A8050;
+      --crema: #EEF6F0;
+      --crema-oscuro: #CCE8D4;
+      --verde: #1B5E35;
+      --verde-claro: #2E7D4F;
+      --verde-suave: #C8E6D2;
+      --marron-oscuro: #0F3320;
+      --dorado: #5BAD78;
+      --dorado-claro: #72C490;
+      --gris-calido: #4A7A5A;
+      --blanco-roto: #F4FBF6;
+      --sombra: rgba(15,51,32,0.15);
+      --rojo-suave: #C0392B;
+      --azul-suave: #2980B9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lato', sans-serif; background: var(--crema); color: var(--marron-oscuro); }
+
+    /* AUTH */
+    #auth-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: linear-gradient(145deg, #0F3320 0%, #1B5E35 50%, #2E7D4F 100%);
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    #auth-screen.visible { display: flex; }
+    .auth-bg-pattern {
+      position: absolute; inset: 0; opacity: 0.06;
+      background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+      background-size: 32px 32px; pointer-events: none;
+    }
+    .auth-card {
+      position: relative; background: #F4FBF6; border-radius: 20px; width: 100%;
+      max-width: 420px; padding: 2.5rem; box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: authFadeIn 0.4s ease;
+    }
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .auth-logo { text-align: center; margin-bottom: 1.8rem; }
+    .auth-logo-icon { font-size: 3.5rem; display: block; margin-bottom: 0.5rem; }
+    .auth-logo-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: #0F3320; }
+    .auth-logo-sub { font-size: 0.72rem; color: #4A7A5A; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 0.2rem; }
+    .auth-tabs { display: flex; background: #CCE8D4; border-radius: 10px; padding: 4px; margin-bottom: 1.8rem; gap:4px; }
+    .auth-tab-btn { flex:1; padding:0.6rem; border:none; border-radius:7px; font-size:0.82rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; background:transparent; color:#4A7A5A; }
+    .auth-tab-btn.active { background:#1B5E35; color:white; box-shadow:0 2px 8px rgba(27,94,53,0.35); }
+    .auth-form-group { margin-bottom:1.1rem; }
+    .auth-form-group label { display:block; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#4A7A5A; margin-bottom:0.4rem; }
+    .auth-form-group input, .auth-form-group select { width:100%; padding:0.75rem 1rem; border:2px solid #CCE8D4; border-radius:9px; background:white; font-size:0.92rem; color:#0F3320; outline:none; }
+    .auth-form-group input:focus, .auth-form-group select:focus { border-color:#2E7D4F; box-shadow:0 0 0 3px rgba(46,125,79,0.15); }
+    .auth-btn { width:100%; padding:0.85rem; background: linear-gradient(135deg, #1B5E35, #2E7D4F); color:white; border:none; border-radius:10px; font-size:0.95rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; margin-top:0.5rem; box-shadow:0 4px 15px rgba(27,94,53,0.35); }
+    .auth-btn:hover { transform:translateY(-1px); }
+    .auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .auth-error { background:#FEE2E2; border:1px solid #FECACA; color:#991B1B; padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1rem; display:none; }
+    .auth-error.show { display:block; }
+    .auth-divider { text-align:center; font-size:0.78rem; color:#4A7A5A; margin:1.2rem 0 0; }
+    .header-user { display:flex; align-items:center; gap:0.75rem; }
+    .user-chip { display:flex; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:20px; padding:0.35rem 0.9rem 0.35rem 0.5rem; }
+    .user-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #5BAD78, #2E7D4F); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:white; }
+    .user-name { font-size:0.8rem; color:#EEF6F0; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .btn-logout { background:rgba(192,57,43,0.8); color:white; border:none; border-radius:8px; padding:0.35rem 0.8rem; font-size:0.75rem; font-weight:700; cursor:pointer; }
+    .btn-logout:hover { background:#C0392B; }
+    #app-shell { display:none; }
+    #app-shell.visible { display:block; }
+
+    /* BASE */
+    .header {
+      background: var(--marron-oscuro);
+      background-image: linear-gradient(135deg, var(--marron-oscuro) 0%, var(--tierra) 100%);
+      padding: 0 2rem; display:flex; align-items:center; justify-content:space-between; height:70px;
+      box-shadow:0 4px 20px var(--sombra); position:sticky; top:0; z-index:100;
+    }
+    .header-brand { display:flex; align-items:center; gap:0.8rem; }
+    .header-icon { font-size:2rem; }
+    .header-title { font-family:'Playfair Display', serif; font-size:1.4rem; font-weight:700; color:var(--crema); }
+    .header-sub { font-size:0.7rem; color:var(--dorado); letter-spacing:2px; text-transform:uppercase; }
+    .header-status { display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:var(--crema-oscuro); }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:#4CAF50; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+    .nav-tabs { background: var(--tierra); display:flex; overflow-x:auto; border-bottom:3px solid var(--dorado); }
+    .nav-tab { padding:0.85rem 1.4rem; font-size:0.8rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--crema-oscuro); cursor:pointer; border:none; background:none; white-space:nowrap; border-bottom:3px solid transparent; display:flex; align-items:center; gap:0.5rem; }
+    .nav-tabs .nav-tab {
+  position: relative;
+  color: #CCE8D4;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.nav-tabs .nav-tab:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-tabs .nav-tab.active {
+  color: #FFFFFF;
+  background: rgba(15, 51, 32, 0.55);
+  border-bottom: 4px solid #72C490;
+  box-shadow: inset 0 -2px 0 #72C490;
+}
+
+.nav-tabs .nav-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -3px;
+  height: 4px;
+  background: #72C490;
+  border-radius: 4px 4px 0 0;
+}
+
+    .main { padding:2rem; max-width:1400px; margin:0 auto; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.8rem; color:var(--tierra); display:flex; align-items:center; gap:0.5rem; }
+    .page-title::after { display:none; content:none; }
+
+    /* COMPONENTES */
+    .card { background:var(--blanco-roto); border-radius:12px; box-shadow:0 2px 15px var(--sombra); border:1px solid var(--crema-oscuro); overflow:hidden; }
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:1.2rem; }
+    .form-group label { display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--gris-calido); margin-bottom:0.4rem; }
+    .form-group input, .form-group select, .form-group textarea { width:100%; padding:0.65rem 0.9rem; border:2px solid var(--crema-oscuro); border-radius:8px; background:var(--blanco-roto); font-family:'Lato', sans-serif; font-size:0.9rem; color:var(--marron-oscuro); outline:none; }
+    .btn { padding:0.65rem 1.4rem; border:none; border-radius:8px; font-size:0.85rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; }
+    .btn-primary { background:linear-gradient(135deg, var(--verde), var(--verde-claro)); color:white; box-shadow:0 3px 10px rgba(74,103,65,0.3); }
+    .btn-danger { background:linear-gradient(135deg, #C0392B, #E74C3C); color:white; padding:0.35rem 0.8rem; font-size:0.75rem; }
+    .btn-edit { background:linear-gradient(135deg, var(--dorado), var(--dorado-claro)); color:var(--marron-oscuro); padding:0.35rem 0.8rem; font-size:0.75rem; }
+    .table-wrap { overflow-x:auto; margin-top:1.5rem; border-radius:10px; box-shadow:0 2px 12px var(--sombra); }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; background:var(--blanco-roto); }
+    thead tr { background:var(--marron-oscuro); color:var(--crema); text-align:left; }
+    thead th { padding:0.85rem 1rem; font-size:0.72rem; letter-spacing:1.5px; text-transform:uppercase; font-weight:700; }
+    tbody tr { border-bottom:1px solid var(--crema-oscuro); }
+    tbody tr:hover { background:var(--verde-suave); }
+    tbody td { padding:0.8rem 1rem; vertical-align:middle; }
+    .badge { display:inline-block; padding:0.25rem 0.7rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+    .badge-activo { background: var(--verde-suave); color: var(--verde); }
+    .badge-vendido { background:#FEF3C7; color:#92400E; }
+    .badge-muerto { background:#FEE2E2; color:#991B1B; }
+    .badge-gestando { background:#DBEAFE; color:#1E40AF; }
+    .badge-pario { background: var(--verde-suave); color: var(--verde); }
+    .badge-fallido { background:#FEE2E2; color:#991B1B; }
+    .badge-macho { background:#DBEAFE; color:#1E40AF; }
+    .badge-hembra { background:#FCE7F3; color:#9D174D; }
+    .stat-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1.2rem; margin-bottom:2rem; }
+    .stat-card { background:var(--blanco-roto); border-radius:14px; padding:1.5rem; border:1px solid var(--crema-oscuro); box-shadow:0 2px 12px var(--sombra); position:relative; overflow:hidden; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; }
+    .stat-card.verde::before { background:linear-gradient(90deg, var(--verde), var(--verde-claro)); }
+    .stat-card.dorado::before { background:linear-gradient(90deg, var(--dorado), var(--dorado-claro)); }
+    .stat-card.tierra::before { background:linear-gradient(90deg, var(--tierra), var(--tierra-claro)); }
+    .stat-card.rojo::before { background:linear-gradient(90deg, #C0392B, #E74C3C); }
+    .stat-icon { font-size:2.2rem; margin-bottom:0.5rem; }
+    .stat-value { font-family:'Playfair Display', serif; font-size:2.2rem; font-weight:700; color:var(--tierra); line-height:1; }
+    .stat-label { font-size:0.75rem; color:var(--gris-calido); text-transform:uppercase; letter-spacing:1px; margin-top:0.3rem; }
+    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; }
+    @media (max-width: 768px) { .charts-grid { grid-template-columns:1fr; } .main { padding:1rem; } }
+    .chart-card { background:var(--blanco-roto); border-radius:14px; padding:1.5rem; border:1px solid var(--crema-oscuro); box-shadow:0 2px 12px var(--sombra); }
+    .chart-title { font-family:'Playfair Display', serif; font-size:1.05rem; color:var(--tierra); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; }
+    .toast { position:fixed; bottom:2rem; right:2rem; background:var(--marron-oscuro); color:var(--crema); padding:1rem 1.5rem; border-radius:10px; font-size:0.875rem; box-shadow:0 8px 25px rgba(0,0,0,0.3); transform:translateY(100px); opacity:0; transition:all 0.3s; z-index:1000; border-left:4px solid var(--dorado); max-width:320px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.error { border-left-color:#E74C3C; }
+    .toast.success { border-left-color:#4CAF50; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--blanco-roto); border-radius:16px; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4); border:2px solid var(--dorado); }
+    .modal-header { background:linear-gradient(135deg, var(--tierra), var(--tierra-claro)); color:var(--crema); padding:1.2rem 1.5rem; font-family:'Playfair Display', serif; font-size:1.1rem; display:flex; justify-content:space-between; align-items:center; border-radius:14px 14px 0 0; }
+    .modal-close { background:none; border:none; color:var(--crema); font-size:1.4rem; cursor:pointer; }
+    .modal-body { padding:1.5rem; }
+    .modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--crema-oscuro); display:flex; gap:0.75rem; justify-content:flex-end; }
+    .empty-state { text-align:center; padding:4rem 2rem; color:var(--gris-calido); }
+    .empty-state .icon { font-size:4rem; margin-bottom:1rem; }
+    .loading { display:flex; align-items:center; justify-content:center; padding:3rem; gap:0.75rem; color:var(--gris-calido); }
+    .spinner { width:24px; height:24px; border:3px solid var(--crema-oscuro); border-top-color:var(--verde); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .realtime-badge { display:inline-flex; align-items:center; gap:0.4rem; background:rgba(76,175,80,0.15); color:var(--verde); border:1px solid rgba(76,175,80,0.3); padding:0.3rem 0.8rem; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
+
+    /* Ocultar línea decorativa como pediste */
+    .page-title::after { display:none; content:none; }
+
+    /* Modales extra */
+    .auth-form-panel { display:block; }
+    .auth-form-group textarea { min-height: 90px; }
+  </style>
+</head>
+<body>
+
+  <div id="auth-screen" class="visible">
+    <div class="auth-bg-pattern"></div>
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="auth-logo-icon">🐑</span>
+        <div class="auth-logo-title">Rancho Ovino</div>
+        <div class="auth-logo-sub">Sistema de Gestión Ganadera</div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" data-tab="login">Iniciar Sesión</button>
+        <button class="auth-tab-btn" data-tab="register">Registrarse</button>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
+      <div id="form-login" class="auth-form-panel">
+        <div class="auth-form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="login-email" placeholder="correo@ejemplo.com" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="auth-form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="auth-btn" id="btn-login" onclick="doLogin()">Entrar al Sistema</button>
+        <div class="auth-divider">¿No tienes cuenta? Haz clic en <strong>Registrarse</strong></div>
+      </div>
+
+      <div id="form-register" class="auth-form-panel" style="display:none">
+        <div class="auth-form-group">
+          <label>Nombre Completo</label>
+          <input type="text" id="reg-nombre" placeholder="Tu nombre">
+        </div>
+        <div class="auth-form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="reg-email" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="auth-form-group">
+          <label>Teléfono (opcional)</label>
+          <input type="tel" id="reg-telefono" placeholder="+52 686 000 0000">
+        </div>
+        <div class="auth-form-group">
+          <label>Rol</label>
+          <select id="reg-rol">
+            <option value="productor">Productor</option>
+            <option value="veterinario">Veterinario</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="auth-form-group">
+          <label>Contraseña</label>
+          <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-form-group">
+          <label>Confirmar Contraseña</label>
+          <input type="password" id="reg-password2" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')doRegister()">
+        </div>
+        <button class="auth-btn" id="btn-register" onclick="doRegister()">Crear Cuenta</button>
+        <div class="auth-divider">¿Ya tienes cuenta? Haz clic en <strong>Iniciar Sesión</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-shell">
+    <header class="header">
+      <div class="header-brand">
+        <span class="header-icon">🐑</span>
+        <div>
+          <div class="header-title">Rancho Ovino</div>
+          <div class="header-sub">Sistema de Gestión Ganadera</div>
+        </div>
+      </div>
+      <div class="header-user">
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span class="user-name" id="user-display">Cargando...</span>
+        </div>
+        <div class="header-status" style="margin-left:0.5rem">
+          <div class="status-dot"></div>
+          <span style="font-size:0.72rem">En vivo</span>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">⎋ Salir</button>
+      </div>
+    </header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active"
+          data-tab="dashboard"
+          onclick="switchTab('dashboard', event)">
+    📊 Dashboard
+  </button>
+
+  <button class="nav-tab"
+          data-tab="animales"
+          onclick="switchTab('animales', event)">
+    🐑 Animales
+  </button>
+
+  <button class="nav-tab"
+          data-tab="reproduccion"
+          onclick="switchTab('reproduccion', event)">
+    🐣 Reproducción
+  </button>
+
+  <button class="nav-tab"
+          data-tab="produccion"
+          onclick="switchTab('produccion', event)">
+    ⚖️ Producción
+  </button>
+
+  <button class="nav-tab"
+          data-tab="salud"
+          onclick="switchTab('salud', event)">
+    💉 Salud
+  </button>
+
+  <button class="nav-tab"
+          data-tab="ventas"
+          onclick="switchTab('ventas', event)">
+    💰 Ventas
+  </button>
+
+  <button class="nav-tab"
+          data-tab="detalle_venta"
+          onclick="switchTab('detalle_venta', event)">
+    🧾 Detalle Ventas
+  </button>
+</nav>
+
+    <main class="main">
+      <div id="tab-dashboard" class="tab-panel active">
+        <div class="page-header">
+          <h1 class="page-title">📊 Dashboard General</h1>
+          <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Actualizando en tiempo real</span>
+        </div>
+
+        <div class="stat-cards" id="stat-cards">
+          <div class="stat-card verde">
+            <div class="stat-icon">🐑</div>
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Animales Activos</div>
+          </div>
+          <div class="stat-card dorado">
+            <div class="stat-icon">♂️</div>
+            <div class="stat-value" id="stat-machos">—</div>
+            <div class="stat-label">Machos</div>
+          </div>
+          <div class="stat-card tierra">
+            <div class="stat-icon">♀️</div>
+            <div class="stat-value" id="stat-hembras">—</div>
+            <div class="stat-label">Hembras</div>
+          </div>
+          <div class="stat-card dorado">
+            <div class="stat-icon">🐑</div>
+            <div class="stat-value" id="stat-gestando">—</div>
+            <div class="stat-label">En Gestación</div>
+          </div>
+          <div class="stat-card verde">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="stat-ventas-total">—</div>
+            <div class="stat-label">Ventas Totales</div>
+          </div>
+          <div class="stat-card rojo">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value" id="stat-eventos-salud">—</div>
+            <div class="stat-label">Eventos de Salud</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">🐑 Estado del Rebaño</div>
+            <canvas id="chartEstado" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">⚖️ Peso Promedio por Mes</div>
+            <canvas id="chartPesos" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">💉 Eventos de Salud por Tipo</div>
+            <canvas id="chartSalud" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">💰 Ventas por Mes</div>
+            <canvas id="chartVentas" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card" style="margin-bottom:1.5rem">
+          <div class="chart-title">📅 Próximos Partos Estimados</div>
+          <div id="proximos-partos-list"></div>
+        </div>
+      </div>
+
+      <div id="tab-animales" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">🐑 Registro de Animales</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-animal')">+ Registrar Animal</button>
+          </div>
+        </div>
+        <div id="table-animales" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-reproduccion" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">🐣 Reproducción</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-reproduccion')">+ Nuevo Empadre</button>
+          </div>
+        </div>
+        <div id="table-reproduccion" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-produccion" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">⚖️ Producción (Pesos)</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-produccion')">+ Registrar Peso</button>
+          </div>
+        </div>
+        <div id="table-produccion" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-salud" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">💉 Salud Animal</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-salud')">+ Registrar Evento</button>
+          </div>
+        </div>
+        <div id="table-salud" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-ventas" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">💰 Ventas</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-venta')">+ Nueva Venta</button>
+          </div>
+        </div>
+        <div id="table-ventas" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-detalle_venta" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">🧾 Detalle de Ventas</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-detalle')">+ Agregar Animal a Venta</button>
+          </div>
+        </div>
+        <div id="table-detalle_venta" class="table-wrap"></div>
+      </div>
+    </main>
+
+    <!-- MODALES -->
+    <div class="modal-overlay" id="modal-animal">
+      <div class="modal">
+        <div class="modal-header">
+          <span>🐑 Registrar Animal</span>
+          <button class="modal-close" onclick="closeModal('modal-animal')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Identificador *</label><input type="text" id="a-identificador" placeholder="Ej: B-001"></div>
+            <div class="form-group"><label>Nombre</label><input type="text" id="a-nombre" placeholder="Ej: Lupita"></div>
+            <div class="form-group"><label>Sexo *</label>
+              <select id="a-sexo"><option value="">Seleccionar...</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select>
+            </div>
+            <div class="form-group"><label>Raza</label><select id="a-raza" onchange="onRazaChange()"><option value="">Seleccionar raza...</option></select></div>
+            <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="a-nacimiento"></div>
+            <div class="form-group"><label>Peso Inicial (kg)</label><input type="number" id="a-peso-inicial" step="0.01"></div>
+            <div class="form-group"><label>Estado General</label>
+              <select id="a-estado"><option value="activo">Activo</option><option value="vendido">Vendido</option><option value="muerto">Muerto</option></select>
+            </div>
+            <div class="form-group"><label>Estado Productivo</label>
+              <select id="a-estado-productivo">
+                <option value="">Seleccionar...</option>
+                <option value="gestante">Gestante</option>
+                <option value="parida">Parida</option>
+                <option value="servicio">Servicio</option>
+                <option value="primala">Primala</option>
+                <option value="cordera">Cordera</option>
+                <option value="lactando">Lactando</option>
+                <option value="destetada">Destetada</option>
+                <option value="semental">Semental</option>
+                <option value="engorda">Engorda</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Número de Partos</label><input type="number" id="a-num-partos" min="0" placeholder="0"></div>
+            <div class="form-group"><label>Tipo de Nacimiento</label>
+              <select id="a-tipo-nacimiento"><option value="">Seleccionar...</option><option value="sencillo">Sencillo</option><option value="doble">Doble</option><option value="triple">Triple</option></select>
+            </div>
+            <div class="form-group"><label>Padre</label><select id="a-padre" onchange="togglePadreManual()"><option value="">Ninguno (registrar manualmente)</option></select></div>
+            <div class="form-group" id="wrap-padre-manual"><label>Nombre del Padre (manual)</label><input type="text" id="a-padre-manual" placeholder="Nombre si no está registrado"></div>
+            <div class="form-group"><label>Madre</label><select id="a-madre" onchange="toggleMadreManual()"><option value="">Ninguna (registrar manualmente)</option></select></div>
+            <div class="form-group" id="wrap-madre-manual"><label>Nombre de la Madre (manual)</label><input type="text" id="a-madre-manual" placeholder="Nombre si no está registrada"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="a-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-animal')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveAnimal()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-animal">
+      <div class="modal">
+        <div class="modal-header"><span>✏️ Editar Animal</span><button class="modal-close" onclick="closeModal('modal-edit-animal')">✕</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ea-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Identificador *</label><input type="text" id="ea-identificador"></div>
+            <div class="form-group"><label>Nombre</label><input type="text" id="ea-nombre"></div>
+            <div class="form-group"><label>Sexo *</label><select id="ea-sexo"><option value="">Seleccionar...</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select></div>
+            <div class="form-group"><label>Raza</label><select id="ea-raza"></select></div>
+            <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="ea-nacimiento"></div>
+            <div class="form-group"><label>Estado General</label><select id="ea-estado"><option value="activo">Activo</option><option value="vendido">Vendido</option><option value="muerto">Muerto</option></select></div>
+            <div class="form-group"><label>Estado Productivo</label><select id="ea-estado-productivo"><option value="">Ninguno</option><option value="gestante">Gestante</option><option value="parida">Parida</option><option value="servicio">Servicio</option><option value="primala">Primala</option><option value="cordera">Cordera</option><option value="lactando">Lactando</option><option value="destetada">Destetada</option><option value="semental">Semental</option><option value="engorda">Engorda</option></select></div>
+            <div class="form-group"><label>Número de Partos</label><input type="number" id="ea-num-partos" min="0"></div>
+            <div class="form-group"><label>Tipo de Nacimiento</label><select id="ea-tipo-nacimiento"><option value="">Ninguno</option><option value="sencillo">Sencillo</option><option value="doble">Doble</option><option value="triple">Triple</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="ea-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-animal')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateAnimal()">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-reproduccion">
+      <div class="modal">
+        <div class="modal-header"><span>🐣 Registrar Empadre</span><button class="modal-close" onclick="closeModal('modal-reproduccion')">✕</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Hembra *</label><select id="r-hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="r-macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="r-empadre"></div>
+            <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="r-parto-real"></div>
+            <div class="form-group"><label>Número de Crías</label><input type="number" id="r-crias" min="0" placeholder="0"></div>
+            <div class="form-group"><label>Estado</label><select id="r-estado"><option value="gestando">Gestando</option><option value="pario">Parió</option><option value="fallido">Fallido</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="r-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="r-notas-repro" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-reproduccion')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveReproduccion()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-editar-parto">
+      <div class="modal">
+        <div class="modal-header"><span>✏️ Actualizar Parto</span><button class="modal-close" onclick="closeModal('modal-editar-parto')">✕</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ep-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Hembra *</label><select id="ep-hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="ep-macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="ep-empadre"></div>
+            <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="ep-parto-real"></div>
+            <div class="form-group"><label>Número de Crías</label><input type="number" id="ep-crias" min="0" placeholder="0"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Estado *</label><select id="ep-estado"><option value="gestando">Gestando</option><option value="pario">Parió</option><option value="fallido">Fallido</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="ep-observaciones" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-editar-parto')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateParto()">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-produccion">
+      <div class="modal">
+        <div class="modal-header"><span>⚖️ Registrar Peso</span><button class="modal-close" onclick="closeModal('modal-produccion')">✕</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Animal *</label><select id="p-animal"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="p-fecha"></div>
+            <div class="form-group"><label>Peso (kg) *</label><input type="number" id="p-peso" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="p-observaciones" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-produccion')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveProduccion()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+<div class="modal-overlay" id="modal-editar-parto">
+  <div class="modal">
+    <div class="modal-header">
+      <span>✏️ Actualizar Parto</span>
+      <button class="modal-close" onclick="closeModal('modal-editar-parto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Hembra *</label>
+          <select id="ep-hembra"><option value="">Seleccionar...</option></select>
+        </div>
+
+        <div class="form-group">
+          <label>Macho *</label>
+          <select id="ep-macho"><option value="">Seleccionar...</option></select>
+        </div>
+
+        <div class="form-group">
+          <label>Fecha Empadre *</label>
+          <input type="date" id="ep-empadre">
+        </div>
+
+        <div class="form-group">
+          <label>Fecha Parto Real</label>
+          <input type="date" id="ep-parto-real">
+        </div>
+
+        <div class="form-group">
+          <label>Número de Crías</label>
+          <input type="number" id="ep-crias" min="0" placeholder="0">
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Estado *</label>
+          <select id="ep-estado">
+            <option value="gestando">Gestando</option>
+            <option value="pario">Parió</option>
+            <option value="fallido">Fallido</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Observaciones</label>
+          <textarea id="ep-observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-editar-parto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="updateParto()">💾 Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+    <div class="modal-overlay" id="modal-salud">
+      <div class="modal">
+        <div class="modal-header"><span>💉 Registrar Evento de Salud</span><button class="modal-close" onclick="closeModal('modal-salud')">✕</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Animal *</label><select id="s-animal"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="s-fecha"></div>
+            <div class="form-group"><label>Tipo *</label><select id="s-tipo"><option value="">Seleccionar...</option><option value="enfermedad">Enfermedad</option><option value="vacuna">Vacuna</option><option value="tratamiento">Tratamiento</option><option value="desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Medicamento</label><input type="text" id="s-medicamento"></div>
+            <div class="form-group"><label>Dosis</label><input type="text" id="s-dosis"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="s-diagnostico" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="s-tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="s-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="s-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-salud')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveSalud()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-salud">
+      <div class="modal">
+        <div class="modal-header"><span>✏️ Editar Evento de Salud</span><button class="modal-close" onclick="closeModal('modal-edit-salud')">✕</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="es-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="es-fecha"></div>
+            <div class="form-group"><label>Tipo *</label><select id="es-tipo"><option value="enfermedad">Enfermedad</option><option value="vacuna">Vacuna</option><option value="tratamiento">Tratamiento</option><option value="desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Medicamento</label><input type="text" id="es-medicamento"></div>
+            <div class="form-group"><label>Dosis</label><input type="text" id="es-dosis"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="es-diagnostico" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="es-tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="es-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="es-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-salud')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateSalud()">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-venta">
+      <div class="modal">
+        <div class="modal-header"><span>💰 Nueva Venta</span><button class="modal-close" onclick="closeModal('modal-venta')">✕</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="v-fecha"></div>
+            <div class="form-group"><label>Cliente *</label><select id="v-cliente"><option value="">Seleccionar cliente...</option></select></div>
+            <div class="form-group"><label>Tipo de Venta *</label><select id="v-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
+            <div class="form-group"><label>Total ($)</label><input type="number" id="v-total" step="0.01" placeholder="0.00"></div>
+            <div class="form-group"><label>Costo ($)</label><input type="number" id="v-costo" step="0.01" placeholder="0.00"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="v-notas" rows="2" placeholder="Ej: Se vendió a cuenta de carne 20 kg..."></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVenta()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-venta">
+      <div class="modal">
+        <div class="modal-header"><span>✏️ Editar Venta</span><button class="modal-close" onclick="closeModal('modal-edit-venta')">✕</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ev-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="ev-fecha"></div>
+            <div class="form-group"><label>Cliente</label><input type="text" id="ev-cliente"></div>
+            <div class="form-group"><label>Total ($)</label><input type="number" id="ev-total" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateVenta()">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-detalle">
+      <div class="modal">
+        <div class="modal-header"><span>🧾 Agregar Animal a Venta</span><button class="modal-close" onclick="closeModal('modal-detalle')">✕</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Venta *</label><select id="d-venta"><option value="">Seleccionar venta...</option></select></div>
+            <div class="form-group"><label>Animal *</label><select id="d-animal"><option value="">Seleccionar animal...</option></select></div>
+            <div class="form-group"><label>Precio ($)</label><input type="number" id="d-precio" step="0.01"></div>
+            <div class="form-group"><label>Peso (kg)</label><input type="number" id="d-peso" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="d-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-detalle')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveDetalle()">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-detalle">
+      <div class="modal">
+        <div class="modal-header"><span>✏️ Editar Detalle Venta</span><button class="modal-close" onclick="closeModal('modal-edit-detalle')">✕</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ed-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Venta</label><select id="ed-venta"></select></div>
+            <div class="form-group"><label>Precio ($)</label><input type="number" id="ed-precio" step="0.01"></div>
+            <div class="form-group"><label>Peso (kg)</label><input type="number" id="ed-peso" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="ed-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-detalle')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateDetalle()">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    // Esto lo dejamos vacío en esta parte, se completa en Parte 2 y Parte 3
+  </script>
+
+</body>
+</html>
+<script>
+  const { createClient } = supabase;
+  const SUPABASE_URL = 'https://kjfwpqookkpxkqhsmikk.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZndwcW9va2tweGtxaHNtaWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjM1NTEsImV4cCI6MjA4OTY5OTU1MX0.pfcsHxpLO-fizYFxI1wSxTANQxqDnGvZXmACbekKhvk';
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let animalesCache = [];
+  let ventasCache = [];
+  let charts = {};
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('open');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function formatMoney(n) {
+    if (n == null) return '—';
+    return '$' + parseFloat(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function badge(val, map) {
+    const cls = map[val] || '';
+    return `<span class="badge ${cls}">${val || '—'}</span>`;
+  }
+
+  function loading(containerId) {
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML = '<div class="loading"><div class="spinner"></div> Cargando datos...</div>';
+  }
+
+  function emptyState(icon, msg) {
+    return `<div class="empty-state"><div class="icon">${icon}</div><p>${msg}</p></div>`;
+  }
+
+  async function deleteRecord(table, id) {
+    if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
+    const { error } = await db.from(table).delete().eq('id', id);
+    if (error) {
+      showToast('Error al eliminar: ' + error.message, 'error');
+      return;
+    }
+    showToast('🗑 Registro eliminado');
+    await refreshAppData();
+  }
+
+function switchTab(name, ev) {
+  const panel = document.getElementById('tab-' + name);
+
+  if (!panel) {
+    console.error('No existe el panel: tab-' + name);
+    return;
+  }
+
+  // Quitar selección de todos los apartados
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.remove('active');
+  });
+
+  // Quitar selección de todos los botones
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // Mostrar el apartado seleccionado
+  panel.classList.add('active');
+
+  // Marcar visualmente el botón seleccionado
+  const btn = ev?.currentTarget ||
+    document.querySelector(`.nav-tab[data-tab="${name}"]`) ||
+    document.querySelector(`.nav-tab[onclick*="'${name}'"]`);
+
+  if (btn) {
+    btn.classList.add('active');
+  }
+}
+
+  async function refreshAppData() {
+    await Promise.all([
+      loadAnimales(),
+      loadReproduccion(),
+      loadProduccion(),
+      loadSalud(),
+      loadVentas(),
+      loadDetalleVenta(),
+      loadDashboard()
+    ]);
+  }
+
+  // ============ ANIMALES ============
+  const RAZAS_BASE = ['Pelibuey', 'Dorper', 'Blackbelly', 'Suffolk', 'Rambouillet', 'Katahdin', 'Merino', 'Corriedale'];
+
+  async function loadRazas() {
+    const { data } = await db.from('razas').select('nombre').order('nombre');
+    if (data && data.length) {
+      const nombres = data.map(r => r.nombre);
+      if (nombres.length) {
+        RAZAS_BASE.splice(0, RAZAS_BASE.length, ...nombres);
+      }
+    }
+    renderRazasSelect();
+  }
+
+  function renderRazasSelect() {
+    const sel = document.getElementById('a-raza');
+    const selEdit = document.getElementById('ea-raza');
+    const build = () => {
+      const current = arguments[0];
+      const options = '<option value="">Seleccionar raza...</option>' +
+        RAZAS_BASE.map(r => `<option value="${r}">${r}</option>`).join('') +
+        '<option value="__nueva__">➕ Agregar nueva raza...</option>';
+      return options;
+    };
+
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = build(current);
+      if (current) sel.value = current;
+    }
+    if (selEdit) {
+      const current = selEdit.value;
+      selEdit.innerHTML = build(current);
+      if (current) selEdit.value = current;
+    }
+  }
+
+  async function onRazaChange() {
+    const sel = document.getElementById('a-raza');
+    if (!sel || sel.value !== '__nueva__') return;
+    const nueva = prompt('Nombre de la nueva raza:');
+    if (!nueva || !nueva.trim()) { sel.value = ''; return; }
+    const nombre = nueva.trim();
+    const { error } = await db.from('razas').insert({ nombre }).select();
+    if (!error) {
+      if (!RAZAS_BASE.includes(nombre)) RAZAS_BASE.push(nombre);
+      RAZAS_BASE.sort();
+      renderRazasSelect();
+      sel.value = nombre;
+    }
+  }
+
+  function calcularEdad(fechaNac) {
+    if (!fechaNac) return '—';
+    const hoy = new Date();
+    const nac = new Date(fechaNac + 'T12:00:00');
+    let anios = hoy.getFullYear() - nac.getFullYear();
+    let meses = hoy.getMonth() - nac.getMonth();
+
+    if (meses < 0) { anios--; meses += 12; }
+    if (hoy.getDate() < nac.getDate()) meses--;
+
+    if (anios > 0) return `${anios} año${anios>1?'s':''} ${meses>0?meses+'m':''}`.trim();
+    if (meses > 0) return `${meses} mes${meses>1?'es':''}`;
+    const dias = Math.floor((hoy - nac) / (1000 * 60 * 60 * 24));
+    return `${dias} día${dias!==1?'s':''}`;
+  }
+
+  const ESTADO_PROD_BADGES = {
+    gestante: 'badge-gestando',
+    parida: 'badge-pario',
+    servicio: 'badge-macho',
+    primala: 'badge-hembra',
+    cordera: 'badge-vendido',
+    lactando: 'badge-activo',
+    destetada: 'badge-vendido',
+    semental: 'badge-macho',
+    engorda: 'badge-muerto'
+  };
+
+function populateAnimalSelects() {
+  const selects = [
+    'a-padre',
+    'a-madre',
+    'r-hembra',
+    'r-macho',
+    'ep-hembra',
+    'ep-macho',
+    'p-animal',
+    's-animal',
+    'd-animal'
+  ];
+
+  selects.forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    const valorActual = select.value;
+
+    let textoInicial = 'Seleccionar...';
+
+    if (id === 'a-padre') {
+      textoInicial = 'Ninguno (registrar manualmente)';
+    }
+
+    if (id === 'a-madre') {
+      textoInicial = 'Ninguna (registrar manualmente)';
+    }
+
+    select.innerHTML = `
+      <option value="">${textoInicial}</option>
+      ${animalesCache.map(animal => `
+        <option value="${animal.id}">
+          ${animal.identificador}${animal.nombre ? ` - ${animal.nombre}` : ''}
+        </option>
+      `).join('')}
+    `;
+
+    if (valorActual) {
+      select.value = valorActual;
+    }
+  });
+
+  togglePadreManual();
+  toggleMadreManual();
+}
+
+  async function loadAnimales() {
+    loading('table-animales');
+    const { data, error } = await db.from('animales').select('*').order('created_at', { ascending: false });
+    if (error) { showToast('Error cargando animales', 'error'); return; }
+    animalesCache = data || [];
+    renderAnimalesTable(data || []);
+    populateAnimalSelects();
+  }
+
+  function renderAnimalesTable(data) {
+    const cont = document.getElementById('table-animales');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('🐑', 'No hay animales registrados aún');
+      return;
+    }
+
+    const rows = data.map(a => `
+      <tr>
+        <td><strong>${a.identificador}</strong></td>
+        <td>${a.nombre || '—'}</td>
+        <td>${badge(a.sexo, {'macho':'badge-macho','hembra':'badge-hembra'})}</td>
+        <td>${a.raza || '—'}</td>
+        <td title="${a.fecha_nacimiento || ''}">${calcularEdad(a.fecha_nacimiento)}</td>
+        <td>${badge(a.estado, {'activo':'badge-activo','vendido':'badge-vendido','muerto':'badge-muerto'})}</td>
+        <td>${a.estado_productivo ? badge(a.estado_productivo, ESTADO_PROD_BADGES) : '—'}</td>
+        <td>${a.peso_inicial ? a.peso_inicial + ' kg' : '—'}</td>
+        <td>${a.numero_partos ?? '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.3rem">
+            <button class="btn btn-edit" onclick="openEditAnimal('${a.id}')">✏️</button>
+            <button class="btn btn-danger" onclick="deleteRecord('animales','${a.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Nombre</th><th>Sexo</th><th>Raza</th><th>Edad</th><th>Estado</th><th>Est. Productivo</th><th>Peso</th><th>Partos</th><th>Acc.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function saveAnimal() {
+    const payload = {
+      identificador: document.getElementById('a-identificador').value.trim(),
+      nombre: document.getElementById('a-nombre').value.trim() || null,
+      sexo: document.getElementById('a-sexo').value,
+      raza: document.getElementById('a-raza').value || null,
+      fecha_nacimiento: document.getElementById('a-nacimiento').value || null,
+      estado: document.getElementById('a-estado').value,
+      estado_productivo: document.getElementById('a-estado-productivo').value || null,
+      numero_partos: document.getElementById('a-num-partos').value ? parseInt(document.getElementById('a-num-partos').value) : 0,
+      tipo_nacimiento: document.getElementById('a-tipo-nacimiento').value || null,
+      notas: document.getElementById('a-notas').value.trim() || null,
+      id_padre: document.getElementById('a-padre').value || null,
+      id_madre: document.getElementById('a-madre').value || null,
+      nombre_padre: document.getElementById('a-padre-manual').value.trim() || null,
+      nombre_madre: document.getElementById('a-madre-manual').value.trim() || null,
+      peso_inicial: document.getElementById('a-peso-inicial').value ? parseFloat(document.getElementById('a-peso-inicial').value) : null
+    };
+
+    if (!payload.identificador || !payload.sexo) {
+      showToast('Identificador y sexo son obligatorios', 'error');
+      return;
+    }
+
+    const { data, error } = await db.from('animales').insert(payload).select().single();
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      return;
+    }
+
+    if (payload.peso_inicial && data) {
+      const fecha = document.getElementById('a-nacimiento').value || new Date().toISOString().split('T')[0];
+      await db.from('produccion').insert({
+        id_animal: data.id,
+        fecha,
+        peso: payload.peso_inicial,
+        observaciones: 'Peso inicial al registro'
+      });
+    }
+
+    showToast('✅ Animal registrado exitosamente');
+    closeModal('modal-animal');
+    resetAnimalForm();
+    await refreshAppData();
+  }
+
+  function resetAnimalForm() {
+    ['a-identificador','a-nombre','a-raza','a-nacimiento','a-notas','a-peso-inicial','a-padre-manual','a-madre-manual','a-num-partos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['a-sexo','a-estado','a-estado-productivo','a-tipo-nacimiento','a-padre','a-madre'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    togglePadreManual();
+    toggleMadreManual();
+  }
+
+  function togglePadreManual() {
+    const sel = document.getElementById('a-padre');
+    const manual = document.getElementById('wrap-padre-manual');
+    if (manual) manual.style.display = sel && sel.value === '' ? 'block' : 'none';
+  }
+
+  function toggleMadreManual() {
+    const sel = document.getElementById('a-madre');
+    const manual = document.getElementById('wrap-madre-manual');
+    if (manual) manual.style.display = sel && sel.value === '' ? 'block' : 'none';
+  }
+
+  async function openEditAnimal(id) {
+    const { data: a, error } = await db.from('animales').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando animal', 'error'); return; }
+
+    document.getElementById('ea-id').value = a.id;
+    document.getElementById('ea-identificador').value = a.identificador || '';
+    document.getElementById('ea-nombre').value = a.nombre || '';
+    document.getElementById('ea-sexo').value = a.sexo || '';
+    document.getElementById('ea-nacimiento').value = a.fecha_nacimiento || '';
+    document.getElementById('ea-estado').value = a.estado || 'activo';
+    document.getElementById('ea-estado-productivo').value = a.estado_productivo || '';
+    document.getElementById('ea-num-partos').value = a.numero_partos ?? '';
+    document.getElementById('ea-tipo-nacimiento').value = a.tipo_nacimiento || '';
+    document.getElementById('ea-notas').value = a.notas || '';
+    document.getElementById('ea-raza').innerHTML = '<option value="">Seleccionar raza...</option>' + RAZAS_BASE.map(r => `<option value="${r}">${r}</option>`).join('') + '<option value="__nueva__">➕ Agregar nueva raza...</option>';
+    document.getElementById('ea-raza').value = a.raza || '';
+
+    openModal('modal-edit-animal');
+  }
+
+  async function updateAnimal() {
+    const id = document.getElementById('ea-id').value;
+    const payload = {
+      identificador: document.getElementById('ea-identificador').value.trim(),
+      nombre: document.getElementById('ea-nombre').value.trim() || null,
+      sexo: document.getElementById('ea-sexo').value,
+      raza: document.getElementById('ea-raza').value || null,
+      fecha_nacimiento: document.getElementById('ea-nacimiento').value || null,
+      estado: document.getElementById('ea-estado').value,
+      estado_productivo: document.getElementById('ea-estado-productivo').value || null,
+      numero_partos: document.getElementById('ea-num-partos').value ? parseInt(document.getElementById('ea-num-partos').value) : 0,
+      tipo_nacimiento: document.getElementById('ea-tipo-nacimiento').value || null,
+      notas: document.getElementById('ea-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('animales').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Animal actualizado');
+    closeModal('modal-edit-animal');
+    await refreshAppData();
+  }
+
+  // ============ REPRODUCCION ============
+  async function loadReproduccion() {
+    loading('table-reproduccion');
+    const { data, error } = await db.from('reproduccion').select(`*, hembra:id_hembra(identificador,nombre), macho:id_macho(identificador,nombre)`).order('created_at', { ascending: false });
+    if (error) { showToast('Error cargando reproducción', 'error'); return; }
+    const cont = document.getElementById('table-reproduccion');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('🐣', 'No hay registros de reproducción');
+      return;
+    }
+
+const rows = data.map(r => `
+  <tr>
+    <td>${r.hembra ? r.hembra.identificador : '—'}</td>
+    <td>${r.macho ? r.macho.identificador : '—'}</td>
+    <td>${formatDate(r.fecha_empadre)}</td>
+    <td>${formatDate(r.fecha_parto_estimada)}</td>
+    <td>${formatDate(r.fecha_parto_real)}</td>
+    <td>${r.numero_crias ?? '—'}</td>
+    <td>${badge(r.estado, {
+      gestando: 'badge-gestando',
+      pario: 'badge-pario',
+      fallido: 'badge-fallido'
+    })}</td>
+    <td>${r.notas || r.observaciones || '—'}</td>
+    <td>
+      <div style="display:flex;gap:0.3rem">
+        <button
+          class="btn btn-edit"
+          onclick="openEditParto('${r.id}')">
+          ✏️
+        </button>
+
+        <button
+          class="btn btn-danger"
+          onclick="deleteRecord('reproduccion','${r.id}')">
+          🗑
+        </button>
+      </div>
+    </td>
+  </tr>
+`).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Hembra</th><th>Macho</th><th>Empadre</th><th>Parto Est.</th><th>Parto Real</th><th>Crías</th><th>Estado</th><th>Notas</th><th>Acc.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function saveReproduccion() {
+    const payload = {
+      id_hembra: document.getElementById('r-hembra').value,
+      id_macho: document.getElementById('r-macho').value,
+      fecha_empadre: document.getElementById('r-empadre').value,
+      fecha_parto_real: document.getElementById('r-parto-real').value || null,
+      numero_crias: document.getElementById('r-crias').value ? parseInt(document.getElementById('r-crias').value) : null,
+      estado: document.getElementById('r-estado').value,
+      observaciones: document.getElementById('r-observaciones').value || null,
+      notas: document.getElementById('r-notas-repro').value.trim() || null
+    };
+
+    if (!payload.id_hembra || !payload.id_macho || !payload.fecha_empadre) {
+      showToast('Hembra, macho y fecha son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('reproduccion').insert(payload);
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      return;
+    }
+
+    showToast('✅ Empadre registrado');
+    closeModal('modal-reproduccion');
+    await refreshAppData();
+  }
+
+async function openEditParto(id) {
+  const { data: parto, error } = await db
+    .from('reproduccion')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !parto) {
+    console.error('Error cargando empadre:', error);
+    showToast('Error cargando el empadre', 'error');
+    return;
+  }
+
+  // Asegurar que los selectores tengan cargados los animales
+  if (!animalesCache || animalesCache.length === 0) {
+    await loadAnimales();
+  } else {
+    populateAnimalSelects();
+  }
+
+  document.getElementById('ep-id').value = parto.id || '';
+  document.getElementById('ep-hembra').value = parto.id_hembra || '';
+  document.getElementById('ep-macho').value = parto.id_macho || '';
+  document.getElementById('ep-empadre').value = parto.fecha_empadre || '';
+  document.getElementById('ep-parto-real').value = parto.fecha_parto_real || '';
+  document.getElementById('ep-crias').value = parto.numero_crias ?? '';
+  document.getElementById('ep-estado').value = parto.estado || 'gestando';
+document.getElementById('ep-observaciones').value =
+  parto.observaciones || parto.notas || '';
+
+  openModal('modal-editar-parto');
+}
+async function updateParto() {
+  const id = document.getElementById('ep-id').value;
+
+  const payload = {
+    id_hembra: document.getElementById('ep-hembra').value,
+    id_macho: document.getElementById('ep-macho').value,
+    fecha_empadre: document.getElementById('ep-empadre').value,
+    fecha_parto_real: document.getElementById('ep-parto-real').value || null,
+    numero_crias: document.getElementById('ep-crias').value !== ''
+      ? parseInt(document.getElementById('ep-crias').value, 10)
+      : null,
+    estado: document.getElementById('ep-estado').value,
+    observaciones: document.getElementById('ep-observaciones').value.trim() || null
+  };
+
+  if (!id) {
+    showToast('No se encontró el registro del empadre', 'error');
+    return;
+  }
+
+  if (!payload.id_hembra || !payload.id_macho || !payload.fecha_empadre) {
+    showToast(
+      'Hembra, macho y fecha de empadre son obligatorios',
+      'error'
+    );
+    return;
+  }
+
+  const { error } = await db
+    .from('reproduccion')
+    .update(payload)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error actualizando empadre:', error);
+    showToast('Error: ' + error.message, 'error');
+    return;
+  }
+
+  showToast('✅ Empadre actualizado');
+  closeModal('modal-editar-parto');
+
+  await refreshAppData();
+}
+
+  // ============ PRODUCCION ============
+  async function loadProduccion() {
+    loading('table-produccion');
+    const { data, error } = await db.from('produccion').select(`*, animal:id_animal(identificador,nombre)`).order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando producción', 'error'); return; }
+
+    const cont = document.getElementById('table-produccion');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('⚖️', 'No hay registros de peso');
+      return;
+    }
+
+    const rows = data.map(p => `
+      <tr>
+        <td>${p.animal ? p.animal.identificador : '—'}</td>
+        <td>${p.animal ? (p.animal.nombre || '—') : '—'}</td>
+        <td>${formatDate(p.fecha)}</td>
+        <td><strong>${p.peso != null ? p.peso + ' kg' : '—'}</strong></td>
+        <td>${p.observaciones || '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.3rem">
+            <button class="btn btn-edit" onclick="openEditProduccion('${p.id}')">✏️</button>
+            <button class="btn btn-danger" onclick="deleteRecord('produccion','${p.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>ID Animal</th><th>Nombre</th><th>Fecha</th><th>Peso</th><th>Observaciones</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function saveProduccion() {
+    const payload = {
+      id_animal: document.getElementById('p-animal').value,
+      fecha: document.getElementById('p-fecha').value,
+      peso: document.getElementById('p-peso').value ? parseFloat(document.getElementById('p-peso').value) : null,
+      observaciones: document.getElementById('p-observaciones').value || null
+    };
+
+    if (!payload.id_animal || !payload.fecha) {
+      showToast('Animal y fecha son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('produccion').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Peso registrado');
+    closeModal('modal-produccion');
+    await refreshAppData();
+  }
+
+  async function openEditProduccion(id) {
+    const { data: p, error } = await db.from('produccion').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando producción', 'error'); return; }
+    document.getElementById('ep2-id').value = p.id;
+    document.getElementById('ep2-fecha').value = p.fecha || '';
+    document.getElementById('ep2-peso').value = p.peso || '';
+    document.getElementById('ep2-obs').value = p.observaciones || '';
+    openModal('modal-edit-produccion');
+  }
+
+  async function updateProduccion() {
+    const id = document.getElementById('ep2-id').value;
+    const payload = {
+      fecha: document.getElementById('ep2-fecha').value,
+      peso: document.getElementById('ep2-peso').value ? parseFloat(document.getElementById('ep2-peso').value) : null,
+      observaciones: document.getElementById('ep2-obs').value || null
+    };
+
+    const { error } = await db.from('produccion').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Peso actualizado');
+    closeModal('modal-edit-produccion');
+    await refreshAppData();
+  }
+</script>
+<script>
+  // ============ SALUD ============
+  async function loadSalud() {
+    loading('table-salud');
+    const { data, error } = await db.from('salud').select(`*, animal:id_animal(identificador,nombre)`).order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando salud', 'error'); return; }
+    const cont = document.getElementById('table-salud');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('💉', 'No hay eventos de salud');
+      return;
+    }
+
+    const tipoMap = { enfermedad:'badge-muerto', vacuna:'badge-activo', tratamiento:'badge-gestando', desparasitacion:'badge-vendido' };
+
+    const rows = data.map(s => `
+      <tr>
+        <td>${s.animal ? s.animal.identificador : '—'}</td>
+        <td>${formatDate(s.fecha)}</td>
+        <td>${badge(s.tipo, tipoMap)}</td>
+        <td>${s.diagnostico || '—'}</td>
+        <td>${s.medicamento || '—'}</td>
+        <td>${s.dosis || '—'}</td>
+        <td>${s.notas || '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.3rem">
+            <button class="btn btn-edit" onclick="openEditSalud('${s.id}')">✏️</button>
+            <button class="btn btn-danger" onclick="deleteRecord('salud','${s.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>Animal</th><th>Fecha</th><th>Tipo</th><th>Diagnóstico</th><th>Medicamento</th><th>Dosis</th><th>Notas</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function saveSalud() {
+    const payload = {
+      id_animal: document.getElementById('s-animal').value,
+      fecha: document.getElementById('s-fecha').value,
+      tipo: document.getElementById('s-tipo').value,
+      medicamento: document.getElementById('s-medicamento').value || null,
+      dosis: document.getElementById('s-dosis').value || null,
+      diagnostico: document.getElementById('s-diagnostico').value || null,
+      tratamiento: document.getElementById('s-tratamiento').value || null,
+      observaciones: document.getElementById('s-observaciones').value || null,
+      notas: document.getElementById('s-notas').value.trim() || null
+    };
+
+    if (!payload.id_animal || !payload.fecha || !payload.tipo) {
+      showToast('Animal, fecha y tipo son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('salud').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Evento de salud registrado');
+    closeModal('modal-salud');
+    await refreshAppData();
+  }
+
+  async function openEditSalud(id) {
+    const { data: s, error } = await db.from('salud').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando salud', 'error'); return; }
+
+    document.getElementById('es-id').value = s.id;
+    document.getElementById('es-fecha').value = s.fecha || '';
+    document.getElementById('es-tipo').value = s.tipo || '';
+    document.getElementById('es-medicamento').value = s.medicamento || '';
+    document.getElementById('es-dosis').value = s.dosis || '';
+    document.getElementById('es-diagnostico').value = s.diagnostico || '';
+    document.getElementById('es-tratamiento').value = s.tratamiento || '';
+    document.getElementById('es-observaciones').value = s.observaciones || '';
+    document.getElementById('es-notas').value = s.notas || '';
+
+    openModal('modal-edit-salud');
+  }
+
+  async function updateSalud() {
+    const id = document.getElementById('es-id').value;
+    const payload = {
+      fecha: document.getElementById('es-fecha').value,
+      tipo: document.getElementById('es-tipo').value,
+      medicamento: document.getElementById('es-medicamento').value || null,
+      dosis: document.getElementById('es-dosis').value || null,
+      diagnostico: document.getElementById('es-diagnostico').value || null,
+      tratamiento: document.getElementById('es-tratamiento').value || null,
+      observaciones: document.getElementById('es-observaciones').value || null,
+      notas: document.getElementById('es-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('salud').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Evento actualizado');
+    closeModal('modal-edit-salud');
+    await refreshAppData();
+  }
+
+  // ============ VENTAS ============
+  async function loadVentas() {
+    loading('table-ventas');
+    const { data, error } = await db.from('ventas').select('*').order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando ventas', 'error'); return; }
+    ventasCache = data || [];
+    const cont = document.getElementById('table-ventas');
+    if (!cont) return;
+    if (!data || !data.length) { cont.innerHTML = emptyState('💰', 'No hay ventas registradas'); return; }
+    const rows = data.map(v => `
+      <tr>
+        <td>${formatDate(v.fecha)}</td>
+        <td>${v.cliente || '—'}</td>
+        <td>${v.tipo_venta === 'pie_cria' ? 'Pie de Cría' : 'Carne'}</td>
+        <td><strong>${formatMoney(v.total)}</strong></td>
+        <td>${formatMoney(v.costo)}</td>
+        <td>${v.notas || '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.3rem">
+            <button class="btn btn-edit" onclick="openEditVenta('${v.id}')">✏️</button>
+            <button class="btn btn-danger" onclick="deleteRecord('ventas','${v.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Costo</th><th>Notas</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+
+    populateVentaSelect();
+  }
+
+  async function saveVenta() {
+    const payload = {
+      fecha: document.getElementById('v-fecha').value || null,
+      cliente: document.getElementById('v-cliente').value || null,
+      tipo_venta: document.getElementById('v-tipo').value || 'carne',
+      total: document.getElementById('v-total').value ? parseFloat(document.getElementById('v-total').value) : null,
+      costo: document.getElementById('v-costo').value ? parseFloat(document.getElementById('v-costo').value) : null,
+      notas: document.getElementById('v-notas').value.trim() || null
+    };
+
+    if (!payload.fecha) { showToast('La fecha es obligatoria', 'error'); return; }
+
+    const { error } = await db.from('ventas').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Venta registrada');
+    closeModal('modal-venta');
+    await refreshAppData();
+  }
+
+  async function openEditVenta(id) {
+    const { data: v, error } = await db.from('ventas').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando venta', 'error'); return; }
+    document.getElementById('ev-id').value = v.id;
+    document.getElementById('ev-fecha').value = v.fecha || '';
+    document.getElementById('ev-cliente').value = v.cliente || '';
+    document.getElementById('ev-total').value = v.total || '';
+    document.getElementById('ev-notas').value = v.notas || '';
+    openModal('modal-edit-venta');
+  }
+
+  async function updateVenta() {
+    const id = document.getElementById('ev-id').value;
+    const payload = {
+      fecha: document.getElementById('ev-fecha').value || null,
+      cliente: document.getElementById('ev-cliente').value || null,
+      total: document.getElementById('ev-total').value ? parseFloat(document.getElementById('ev-total').value) : null,
+      notas: document.getElementById('ev-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('ventas').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Venta actualizada');
+    closeModal('modal-edit-venta');
+    await refreshAppData();
+  }
+
+  function populateVentaSelect() {
+    const el = document.getElementById('d-venta');
+    if (!el) return;
+
+    el.innerHTML = '<option value="">Seleccionar venta...</option>' +
+      ventasCache.map(v => `<option value="${v.id}">${formatDate(v.fecha)} - ${v.cliente || 'Sin cliente'} (${formatMoney(v.total)})</option>`).join('');
+  }
+
+  async function loadDetalleVenta() {
+    loading('table-detalle_venta');
+    const { data, error } = await db.from('detalle_venta').select(`*, venta:id_venta(fecha,cliente), animal:id_animal(identificador,nombre)`).order('id', { ascending: false });
+    if (error) { showToast('Error cargando detalle', 'error'); return; }
+    const cont = document.getElementById('table-detalle_venta');
+    if (!cont) return;
+    if (!data || !data.length) { cont.innerHTML = emptyState('🧾', 'No hay detalle de ventas'); return; }
+
+    const rows = data.map(d => `
+      <tr>
+        <td>${d.venta ? formatDate(d.venta.fecha) + (d.venta.cliente ? ' — ' + d.venta.cliente : '') : '—'}</td>
+        <td>${d.animal ? d.animal.identificador : '—'}</td>
+        <td>${d.animal ? (d.animal.nombre || '—') : '—'}</td>
+        <td>${formatMoney(d.precio)}</td>
+        <td>${d.peso != null ? d.peso + ' kg' : '—'}</td>
+        <td>${d.notas || '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.3rem">
+            <button class="btn btn-edit" onclick="openEditDetalle('${d.id}','${d.id_venta}','${d.precio || ''}','${d.peso || ''}','${(d.notas || '').replace(/'/g, '')}')">✏️</button>
+            <button class="btn btn-danger" onclick="deleteRecord('detalle_venta','${d.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>Venta</th><th>ID Animal</th><th>Nombre</th><th>Precio</th><th>Peso</th><th>Notas</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function saveDetalle() {
+    const payload = {
+      id_venta: document.getElementById('d-venta').value,
+      id_animal: document.getElementById('d-animal').value,
+      precio: document.getElementById('d-precio').value ? parseFloat(document.getElementById('d-precio').value) : null,
+      peso: document.getElementById('d-peso').value ? parseFloat(document.getElementById('d-peso').value) : null,
+      notas: document.getElementById('d-notas').value.trim() || null
+    };
+
+    if (!payload.id_venta || !payload.id_animal) {
+      showToast('Venta y animal son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('detalle_venta').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Detalle registrado');
+    closeModal('modal-detalle');
+    await refreshAppData();
+  }
+
+  function openEditDetalle(id, idVenta, precio, peso, notas) {
+    document.getElementById('ed-id').value = id;
+    document.getElementById('ed-precio').value = precio || '';
+    document.getElementById('ed-peso').value = peso || '';
+    document.getElementById('ed-notas').value = notas || '';
+    populateVentaSelect();
+    const sv = document.getElementById('ed-venta');
+    if (sv) {
+      sv.innerHTML = document.getElementById('d-venta').innerHTML;
+      sv.value = idVenta || '';
+    }
+    openModal('modal-edit-detalle');
+  }
+
+  async function updateDetalle() {
+    const id = document.getElementById('ed-id').value;
+    const payload = {
+      precio: document.getElementById('ed-precio').value ? parseFloat(document.getElementById('ed-precio').value) : null,
+      peso: document.getElementById('ed-peso').value ? parseFloat(document.getElementById('ed-peso').value) : null,
+      notas: document.getElementById('ed-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('detalle_venta').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast('✅ Detalle actualizado');
+    closeModal('modal-edit-detalle');
+    await refreshAppData();
+  }
+
+  // ============ DASHBOARD ============
+  async function loadDashboard() {
+    const { data: animals } = await db.from('animales').select('id,sexo,estado');
+    const activos = animals?.filter(a => a.estado === 'activo') || [];
+    document.getElementById('stat-total').textContent = activos.length;
+    document.getElementById('stat-machos').textContent = activos.filter(a => a.sexo === 'macho').length;
+    document.getElementById('stat-hembras').textContent = activos.filter(a => a.sexo === 'hembra').length;
+
+    const { data: repro } = await db.from('reproduccion').select('estado');
+    const gestando = repro?.filter(r => r.estado === 'gestando') || [];
+    document.getElementById('stat-gestando').textContent = gestando.length;
+
+    const { data: ventas } = await db.from('ventas').select('total');
+    const totalVentas = ventas?.reduce((s, v) => s + (v.total || 0), 0) || 0;
+    document.getElementById('stat-ventas-total').textContent = formatMoney(totalVentas);
+
+    const { data: salud } = await db.from('salud').select('id');
+    document.getElementById('stat-eventos-salud').textContent = salud?.length || 0;
+
+    buildChartEstado(animals || []);
+    await buildChartPesos();
+    await buildChartSalud();
+    await buildChartVentas();
+    await buildProximosPartos();
+  }
+
+  function buildChart(id, type, labels, datasets, options = {}) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type,
+      data: { labels, datasets },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { font: { family: 'Lato' }, color: '#3D2B1A' } } }, ...options }
+    });
+  }
+
+  function buildChartEstado(animals) {
+    const activos = animals.filter(a => a.estado === 'activo').length;
+    const vendidos = animals.filter(a => a.estado === 'vendido').length;
+    const muertos = animals.filter(a => a.estado === 'muerto').length;
+    buildChart('chartEstado', 'doughnut', ['Activos', 'Vendidos', 'Muertos'], [{ data: [activos, vendidos, muertos], backgroundColor: ['#4A6741','#C8A96A','#C0392B'], borderWidth: 0 }]);
+  }
+
+  async function buildChartPesos() {
+    const { data } = await db.from('produccion').select('fecha,peso').order('fecha');
+    if (!data || !data.length) return;
+    const grouped = {};
+    data.forEach(p => { const mes = p.fecha?.slice(0, 7); if (!grouped[mes]) grouped[mes] = []; grouped[mes].push(p.peso); });
+    const labels = Object.keys(grouped).slice(-8);
+    const values = labels.map(m => {
+      const arr = grouped[m];
+      return (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(2);
+    });
+    buildChart('chartPesos', 'line', labels, [{ label: 'Peso promedio (kg)', data: values, borderColor: '#6B4C2A', backgroundColor: 'rgba(107,76,42,0.1)', tension: 0.4, fill: true, pointBackgroundColor: '#6B4C2A' }], { scales: { y: { beginAtZero: false }, x: { ticks: { color: '#8A7968' } } } });
+  }
+
+  async function buildChartSalud() {
+    const { data } = await db.from('salud').select('tipo');
+    if (!data || !data.length) return;
+    const counts = {};
+    data.forEach(s => { counts[s.tipo] = (counts[s.tipo] || 0) + 1; });
+    buildChart('chartSalud', 'bar', Object.keys(counts), [{ label: 'Eventos', data: Object.values(counts), backgroundColor: ['#4A6741','#C8A96A','#6B4C2A','#8B6340'], borderRadius: 6 }]);
+  }
+
+  async function buildChartVentas() {
+    const { data } = await db.from('ventas').select('fecha,total').order('fecha');
+    if (!data || !data.length) return;
+    const grouped = {};
+    data.forEach(v => { const mes = v.fecha?.slice(0, 7); if (!grouped[mes]) grouped[mes] = 0; grouped[mes] += v.total || 0; });
+    const labels = Object.keys(grouped).slice(-8);
+    const values = labels.map(m => grouped[m].toFixed(2));
+    buildChart('chartVentas', 'bar', labels, [{ label: 'Ventas ($)', data: values, backgroundColor: 'rgba(200,169,106,0.7)', borderColor: '#C8A96A', borderWidth: 2, borderRadius: 6 }]);
+  }
+
+  async function buildProximosPartos() {
+    const { data } = await db.from('reproduccion').select(`fecha_parto_estimada, estado, hembra:id_hembra(identificador,nombre)`).eq('estado', 'gestando').order('fecha_parto_estimada');
+    const cont = document.getElementById('proximos-partos-list');
+    if (!cont) return;
+    if (!data || !data.length) { cont.innerHTML = '<p style="color:var(--gris-calido);padding:1rem">No hay hembras en gestación actualmente.</p>'; return; }
+    const hoy = new Date();
+    cont.innerHTML = data.map(r => {
+      const fecha = new Date(r.fecha_parto_estimada + 'T12:00:00');
+      const dias = Math.round((fecha - hoy) / (1000 * 60 * 60 * 24));
+      const urgencia = dias <= 7 ? '#C0392B' : dias <= 30 ? '#E67E22' : '#4A6741';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:var(--crema);border-radius:8px;margin-bottom:0.5rem;border-left:4px solid ${urgencia}">
+          <div>
+            <strong style="color:var(--tierra)">${r.hembra?.identificador || '—'}</strong>
+            <span style="color:var(--gris-calido);font-size:0.85rem;margin-left:0.5rem">${r.hembra?.nombre || ''}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.8rem;color:var(--gris-calido)">Parto estimado</div>
+            <div style="font-weight:700;color:${urgencia}">${formatDate(r.fecha_parto_estimada)} (${dias > 0 ? 'en ' + dias + ' días' : 'hoy o ya pasó'})</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ============ REALTIME ============
+  function setupRealtime() {
+    db.channel('realtime-all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'animales' }, () => { showToast('🐑 Cambio en Animales detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reproduccion' }, () => { showToast('🐣 Cambio en Reproducción detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'produccion' }, () => { showToast('⚖️ Cambio en Producción detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'salud' }, () => { showToast('💉 Cambio en Salud detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ventas' }, () => { showToast('💰 Cambio en Ventas detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'detalle_venta' }, () => { showToast('🧾 Cambio en Detalle Venta detectado'); refreshAppData(); })
+      .subscribe();
+  }
+
+  // ============ AUTH ============
+  let currentUser = null;
+
+  function switchAuthTab(tab) {
+    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.querySelectorAll('.auth-tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    hideAuthError();
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function hideAuthError() {
+    const el = document.getElementById('auth-error');
+    if (el) el.classList.remove('show');
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showAuthError('Por favor ingresa correo y contraseña.'); return; }
+
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; btn.textContent = 'Verificando...';
+    hideAuthError();
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = 'Entrar al Sistema';
+
+    if (error) {
+      showAuthError('❌ ' + (error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : error.message));
+      return;
+    }
+
+    onLoginSuccess(data.user);
+  }
+
+  async function doRegister() {
+    const nombre = document.getElementById('reg-nombre').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const telefono = document.getElementById('reg-telefono').value.trim();
+    const rol = document.getElementById('reg-rol').value;
+    const password = document.getElementById('reg-password').value;
+    const password2 = document.getElementById('reg-password2').value;
+
+    if (!nombre || !email || !password) { showAuthError('Nombre, correo y contraseña son obligatorios.'); return; }
+    if (password.length < 6) { showAuthError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (password !== password2) { showAuthError('Las contraseñas no coinciden.'); return; }
+
+    const btn = document.getElementById('btn-register');
+    btn.disabled = true; btn.textContent = 'Creando cuenta...';
+    hideAuthError();
+
+    const { data, error } = await db.auth.signUp({ email, password });
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Crear Cuenta';
+      showAuthError('❌ ' + error.message);
+      return;
+    }
+
+    if (data.user) {
+      await db.from('usuarios').upsert({
+        id: data.user.id,
+        nombre,
+        rol,
+        telefono: telefono || null
+      });
+    }
+
+    btn.disabled = false; btn.textContent = 'Crear Cuenta';
+    showToast('✅ Cuenta creada. Ya puedes iniciar sesión.');
+    switchAuthTab('login');
+    document.getElementById('login-email').value = email;
+  }
+
+  async function doLogout() {
+    if (!confirm('¿Cerrar sesión?')) return;
+    await db.auth.signOut();
+    currentUser = null;
+    document.getElementById('app-shell').classList.remove('visible');
+    document.getElementById('auth-screen').classList.add('visible');
+    document.getElementById('login-password').value = '';
+    showToast('👋 Sesión cerrada');
+  }
+
+  function onLoginSuccess(user) {
+    currentUser = user;
+    document.getElementById('auth-screen').classList.remove('visible');
+    document.getElementById('app-shell').classList.add('visible');
+
+    const email = user.email || '';
+    const initials = email.substring(0, 2).toUpperCase();
+    document.getElementById('user-avatar').textContent = initials;
+
+    db.from('usuarios').select('nombre,rol').eq('id', user.id).single().then(({ data }) => {
+      const display = data?.nombre || email;
+      document.getElementById('user-display').textContent = display + (data?.rol ? ' · ' + data.rol : '');
+    });
+
+    initApp();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchAuthTab(btn.dataset.tab));
+    });
+  });
+
+  // ============ INIT ============
+  async function initApp() {
+    const { error: testError } = await db.from('animales').select('id').limit(1);
+    if (testError) { showToast('❌ Error de conexión: ' + testError.message, 'error'); return; }
+
+    await loadRazas();
+    await refreshAppData();
+    setupRealtime();
+  }
+
+  db.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      onLoginSuccess(session.user);
+    } else {
+      document.getElementById('auth-screen').classList.add('visible');
+    }
+  });
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('app-shell').classList.remove('visible');
+      document.getElementById('auth-screen').classList.add('visible');
+    }
+  });
+</script>
