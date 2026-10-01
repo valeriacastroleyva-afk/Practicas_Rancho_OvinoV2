@@ -1,0 +1,3766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rancho Ovino — Sistema de Gestión</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1B5E35">
+  <link rel="apple-touch-icon" href="/Practicas_Rancho_Ovino/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Rancho Ovino">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tierra: #2E6B3E;
+      --tierra-claro: #3A8050;
+      --crema: #EEF6F0;
+      --crema-oscuro: #CCE8D4;
+      --verde: #1B5E35;
+      --verde-claro: #2E7D4F;
+      --verde-suave: #C8E6D2;
+      --marron-oscuro: #0F3320;
+      --dorado: #5BAD78;
+      --dorado-claro: #72C490;
+      --gris-calido: #4A7A5A;
+      --blanco-roto: #F4FBF6;
+      --sombra: rgba(15,51,32,0.15);
+      --rojo-suave: #C0392B;
+      --azul-suave: #2980B9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lato', sans-serif; background: #e8efe9; color: var(--marron-oscuro); }
+    body, h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, td, th { font-family: 'Lato', sans-serif; }
+
+    /* AUTH */
+    #auth-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: linear-gradient(145deg, #0F3320 0%, #1B5E35 50%, #2E7D4F 100%);
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    #auth-screen.visible { display: flex; }
+    .auth-bg-pattern {
+      position: absolute; inset: 0; opacity: 0.06;
+      background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+      background-size: 32px 32px; pointer-events: none;
+    }
+    .auth-card {
+      position: relative; background: #F4FBF6; border-radius: 20px; width: 100%;
+      max-width: 420px; padding: 2.5rem; box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: authFadeIn 0.4s ease;
+    }
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .auth-logo { text-align: center; margin-bottom: 1.8rem; }
+    .auth-logo-icon { font-size: 3.5rem; display: block; margin-bottom: 0.5rem; }
+    .auth-logo-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: #0F3320; }
+    .auth-logo-sub { font-size: 0.72rem; color: #4A7A5A; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 0.2rem; }
+    .auth-tabs { display: flex; background: #CCE8D4; border-radius: 10px; padding: 4px; margin-bottom: 1.8rem; gap:4px; }
+    .auth-tab-btn { flex:1; padding:0.6rem; border:none; border-radius:7px; font-size:0.82rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; background:transparent; color:#4A7A5A; }
+    .auth-tab-btn.active { background:#1B5E35; color:white; box-shadow:0 2px 8px rgba(27,94,53,0.35); }
+    .auth-form-group { margin-bottom:1.1rem; }
+    .auth-form-group label { display:block; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#4A7A5A; margin-bottom:0.4rem; }
+    .auth-form-group input, .auth-form-group select { width:100%; padding:0.75rem 1rem; border:2px solid #CCE8D4; border-radius:9px; background:white; font-size:0.92rem; color:#0F3320; outline:none; }
+    .auth-form-group input:focus, .auth-form-group select:focus { border-color:#2E7D4F; box-shadow:0 0 0 3px rgba(46,125,79,0.15); }
+    .auth-btn { width:100%; padding:0.85rem; background: linear-gradient(135deg, #1B5E35, #2E7D4F); color:white; border:none; border-radius:10px; font-size:0.95rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; margin-top:0.5rem; box-shadow:0 4px 15px rgba(27,94,53,0.35); }
+    .auth-btn:hover { transform:translateY(-1px); }
+    .auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .auth-error { background:#FEE2E2; border:1px solid #FECACA; color:#991B1B; padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1rem; display:none; }
+    .auth-error.show { display:block; }
+    .auth-divider { text-align:center; font-size:0.78rem; color:#4A7A5A; margin:1.2rem 0 0; }
+    .header-user { display:flex; align-items:center; gap:0.75rem; }
+    .user-chip { display:flex; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:20px; padding:0.35rem 0.9rem 0.35rem 0.5rem; }
+    .user-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #5BAD78, #2E7D4F); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:white; }
+    .user-name { font-size:0.8rem; color:#EEF6F0; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .btn-logout { background:rgba(192,57,43,0.8); color:white; border:none; border-radius:8px; padding:0.35rem 0.8rem; font-size:0.75rem; font-weight:700; cursor:pointer; }
+    .btn-logout:hover { background:#C0392B; }
+    #app-shell { display:none; }
+    #app-shell.visible { display:block; }
+
+    /* BASE */
+    .header {
+      background: linear-gradient(180deg, rgba(20,72,40,0.95) 0%, rgba(17,72,45,1) 100%);
+      padding: 0.4rem 1rem 0.5rem;
+      box-shadow:0 4px 20px var(--sombra); position:sticky; top:0; z-index:100;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      min-height: 62px;
+    }
+    .header-brand { display:flex; align-items:center; gap:0.8rem; margin-right:auto; }
+    .header-icon { font-size:2rem; }
+    .header-title { font-family:'Playfair Display', serif; font-size:1.4rem; font-weight:700; color:var(--crema); }
+    .header-sub {
+      font-size: 1.3rem;
+      color: rgba(220,239,224,0.95);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 800;
+      line-height: 1.1;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-status { display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:var(--crema-oscuro); }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:#4CAF50; animation:pulse 2s infinite; }
+    .header-user { display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; }
+    .user-dropdown { position:relative; }
+    .user-chip {
+      display:flex;
+      align-items:center;
+      gap:0.65rem;
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.14);
+      border-radius:999px;
+      padding:0.22rem 0.7rem 0.22rem 0.25rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      cursor:pointer;
+      color:inherit;
+      font:inherit;
+    }
+    .user-avatar {
+      width:34px;
+      height:34px;
+      min-width:34px;
+      border-radius:50%;
+      background:linear-gradient(135deg, #85c89a, #2f7d4f);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:0.8rem;
+      font-weight:800;
+      color:white;
+      border:2px solid rgba(255,255,255,0.3);
+    }
+    .user-name {
+      font-size:0.9rem;
+      color:#EEF6F0;
+      font-weight:700;
+      max-width:170px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .user-menu {
+      position:absolute;
+      right:0;
+      top:calc(100% + 0.85rem);
+      display:none;
+      flex-direction:column;
+      gap:0.55rem;
+      min-width:220px;
+      padding:0.7rem;
+      background:rgba(244,251,246,0.98);
+      border:1px solid rgba(92,150,105,0.28);
+      border-radius:16px;
+      box-shadow:0 18px 35px rgba(13,51,29,0.18);
+      z-index:30;
+    }
+    .user-menu.open { display:flex; }
+    .user-menu-item {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      width:100%;
+      border:1px solid rgba(33,104,63,0.18);
+      background:#ffffff;
+      color:#173d2d;
+      border-radius:12px;
+      padding:0.7rem 0.8rem;
+      font-size:0.76rem;
+      font-weight:700;
+      letter-spacing:0.04em;
+      text-transform:uppercase;
+      cursor:pointer;
+      text-align:left;
+    }
+    .user-menu-item:hover { background:var(--verde-suave); }
+    .user-menu-item.danger {
+      border-color:rgba(191,62,55,0.22);
+      color:#8e2d26;
+    }
+    .user-config-icon {
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      width:14px;
+      height:12px;
+      flex-shrink:0;
+    }
+    .user-config-icon span {
+      display:block;
+      width:100%;
+      height:2px;
+      background:#1D5E38;
+      border-radius:2px;
+    }
+    .user-menu-arrow {
+      font-size:0.9rem;
+      color:#1b5e35;
+      line-height:1;
+    }
+    .btn-logout {
+      display:none;
+      background:linear-gradient(180deg, #d75a4a, #c9473b);
+      color:white;
+      border:none;
+      border-radius:999px;
+      padding:0.42rem 0.9rem;
+      font-size:0.8rem;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 3px 10px rgba(201,71,59,0.35);
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+/* NAVEGACIÓN PRINCIPAL */
+.nav-tabs {
+  background: linear-gradient(180deg, rgba(19,86,51,0.96), rgba(17,73,44,1));
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.15rem 0.3rem 0.15rem;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.08);
+}
+
+.nav-tab {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0.95rem 1.1rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.96);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 54px;
+}
+
+.nav-tab:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.08);
+}
+
+.nav-tab.active {
+  color: #153f2b;
+  background: rgba(236, 243, 238, 0.96);
+  box-shadow: inset 0 -2px 0 rgba(8, 43, 28, 0.18);
+}
+
+.nav-tab:focus-visible {
+  outline: 2px solid var(--dorado-claro);
+  outline-offset: -2px;
+}
+
+@media (max-width: 768px) {
+  .nav-tabs {
+    padding: 0 0.5rem;
+    gap: 0;
+  }
+
+  .nav-tab {
+    padding: 0.8rem 0.75rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+}
+
+    .main { padding:2rem 1.2rem; max-width:1380px; margin:0 auto; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; flex-wrap:wrap; gap:1rem; }
+    .page-title { font-family:'Lato', sans-serif; font-size:clamp(2.2rem, 2.2vw, 4rem); color:#1a4a34; display:flex; align-items:center; gap:0.5rem; letter-spacing:-0.05em; font-weight:700; }
+    .page-title::after { display:none; content:none; }
+
+    /* COMPONENTES */
+    .card { background:var(--blanco-roto); border-radius:12px; box-shadow:0 2px 15px var(--sombra); border:1px solid var(--crema-oscuro); overflow:hidden; }
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:1.2rem; }
+    .form-group label { display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--gris-calido); margin-bottom:0.4rem; }
+    .form-group input, .form-group select, .form-group textarea { width:100%; padding:0.65rem 0.9rem; border:2px solid var(--crema-oscuro); border-radius:8px; background:var(--blanco-roto); font-family:'Lato', sans-serif; font-size:0.9rem; color:var(--marron-oscuro); outline:none; }
+    .btn { padding:0.65rem 1.4rem; border:none; border-radius:8px; font-size:0.85rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; }
+    .btn-primary { background:linear-gradient(135deg, var(--verde), var(--verde-claro)); color:white; box-shadow:0 3px 10px rgba(74,103,65,0.3); }
+    .table-actions {
+      display:flex;
+      gap:0.45rem;
+      justify-content:flex-end;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .table-actions .btn,
+    .btn-danger,
+    .btn-edit {
+      min-height: 2.1rem;
+      min-width: 76px;
+      padding: 0.38rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      line-height: 1.1;
+      justify-content:center;
+      box-shadow: none;
+      border: 1px solid rgba(0,0,0,0.04);
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.01em;
+      display:inline-flex;
+      align-items:center;
+      white-space: nowrap;
+    }
+    .btn-danger {
+      background: #E4574F;
+      color: #ffffff;
+    }
+    .btn-edit {
+      background: #57B96D;
+      color: #ffffff;
+    }
+    .table-wrap { overflow-x:auto; margin-top:1.5rem; border-radius:10px; box-shadow:0 2px 12px var(--sombra); }
+    .table-toolbar {
+      display:grid;
+      grid-template-columns:minmax(220px, 2fr) repeat(2, minmax(150px, 1fr));
+      gap:0.75rem;
+      margin-top:1.25rem;
+      padding:0.9rem;
+      background:var(--blanco-roto);
+      border:1px solid var(--crema-oscuro);
+      border-radius:12px;
+      box-shadow:0 2px 10px var(--sombra);
+    }
+    .table-toolbar input,
+    .table-toolbar select {
+      width:100%;
+      min-height:42px;
+      padding:0.6rem 0.85rem;
+      border:1px solid var(--crema-oscuro);
+      border-radius:9px;
+      background:#ffffff;
+      color:var(--marron-oscuro);
+      font:inherit;
+      outline:none;
+    }
+    .table-toolbar input:focus,
+    .table-toolbar select:focus {
+      border-color:var(--verde-claro);
+      box-shadow:0 0 0 3px rgba(46,125,79,0.12);
+    }
+    .table-filter-empty td {
+      padding:1.5rem;
+      color:var(--gris-calido);
+      text-align:center;
+    }
+    @media (max-width: 700px) {
+      .table-toolbar { grid-template-columns:1fr; }
+    }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; background:var(--blanco-roto); }
+    thead tr { background:var(--marron-oscuro); color:var(--crema); text-align:left; }
+    thead th { padding:0.85rem 1rem; font-size:0.72rem; letter-spacing:1.5px; text-transform:uppercase; font-weight:700; }
+    tbody tr { border-bottom:1px solid var(--crema-oscuro); }
+    tbody tr:hover { background:var(--verde-suave); }
+    tbody td { padding:0.8rem 1rem; vertical-align:middle; }
+    .badge { display:inline-block; padding:0.25rem 0.7rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+    .badge-Activo { background: var(--verde-suave); color: var(--verde); }
+    .badge-Vendido { background:#FEF3C7; color:#92400E; }
+    .badge-Muerto { background:#FEE2E2; color:#991B1B; }
+    .badge-Gestando { background:#DBEAFE; color:#1E40AF; }
+    .badge-Pario { background: var(--verde-suave); color: var(--verde); }
+    .badge-Fallido { background:#FEE2E2; color:#991B1B; }
+    .badge-Macho { background:#DBEAFE; color:#1E40AF; }
+    .badge-Hembra { background:#FCE7F3; color:#9D174D; }
+    .stat-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0.85rem; margin:1rem 0 1.5rem; align-items:stretch; }
+    .stat-card { position:relative; appearance:none; text-align:left; font:inherit; color:inherit; cursor:pointer; background:#fff; border-radius:14px; overflow:hidden; border:1px solid rgba(46,107,62,0.14); box-shadow:0 4px 12px rgba(15,51,32,0.06); transition:transform 0.2s ease, box-shadow 0.2s ease; min-height:128px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; padding:1rem 1.15rem 1rem 1.3rem; }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:0 9px 18px rgba(15,51,32,0.11); }
+    .stat-card:focus-visible { outline:3px solid var(--verde-claro); outline-offset:2px; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:5px; background:linear-gradient(180deg, #1d5d3d 0%, #2e7d4f 100%); }
+    .stat-card.rojo::before { background:linear-gradient(180deg, #c43d33 0%, #e25d4d 100%); }
+    .stat-icon {
+      position:relative;
+      z-index:1;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      height:52px;
+      margin-top:0.15rem;
+      font-size:2rem;
+      filter:drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+    }
+
+    .stat-value {
+      position:relative;
+      z-index:1;
+      font-family:'Lato', sans-serif;
+      font-size:clamp(1.8rem, 2.1vw, 2.5rem);
+      font-weight:900;
+      color:#174e35;
+      line-height:1;
+      text-align:left;
+      padding:0;
+      letter-spacing:-0.05em;
+      margin-top:0;
+    }
+
+    .stat-label {
+      position:relative;
+      z-index:1;
+      font-size:0.7rem;
+      color:#2f4c3a;
+      text-transform:uppercase;
+      letter-spacing:0.14em;
+      line-height:1.45;
+      text-align:left;
+      padding:0;
+      font-weight:800;
+      margin-top:0.45rem;
+      max-width:none;
+    } 
+    .dashboard-card { background:var(--blanco-roto); border:1px solid var(--crema-oscuro); border-radius:14px; box-shadow:0 2px 12px var(--sombra); }
+    .dashboard-card h2, .dashboard-subtitle { color:var(--tierra); font-size:1rem; font-weight:800; }
+    .dashboard-section-link:hover { background:var(--crema); }
+    .dashboard-filter { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:0 0 1rem; padding:0.9rem 1.1rem; background:linear-gradient(120deg,#16492f,#287449); border-radius:14px; box-shadow:0 5px 14px rgba(15,51,32,0.14); color:#fff; }
+    .dashboard-filter-copy { display:flex; flex-direction:column; gap:0.2rem; }
+    .dashboard-filter-copy strong { font-size:0.9rem; }
+    .dashboard-filter-copy span { color:rgba(255,255,255,0.76); font-size:0.75rem; }
+    .dashboard-filter-controls { display:flex; align-items:center; justify-content:flex-end; gap:0.55rem; flex-wrap:wrap; }
+    .dashboard-filter select, .dashboard-filter input, .dashboard-filter button { min-height:38px; padding:0.45rem 0.7rem; border:1px solid rgba(255,255,255,0.24); border-radius:8px; font:inherit; font-size:0.8rem; }
+    .dashboard-filter select, .dashboard-filter input { background:#fff; color:var(--marron-oscuro); }
+    .dashboard-filter button { background:#e6f3e9; color:#174e35; font-weight:800; cursor:pointer; }
+    .dashboard-filter button:hover { background:#fff; }
+    .dashboard-custom-range { display:flex; align-items:center; gap:0.45rem; }
+    .dashboard-custom-range[hidden] { display:none; }
+    .dashboard-range-error { display:none; color:#ffe0dc; font-size:0.75rem; flex-basis:100%; text-align:right; }
+    .dashboard-range-error.visible { display:block; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .profile-form-message { margin-top:0.8rem; padding:0.75rem 0.9rem; border-radius:8px; font-size:0.82rem; line-height:1.45; }
+    .profile-form-message.error { color:#8e2d26; background:#fff0ee; border:1px solid #f0c4be; }
+    .profile-form-message.success { color:#1b5e35; background:#edf7ef; border:1px solid #c4e3cc; }
+    .dashboard-overview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:0 0 1.5rem; }
+    .dashboard-card { min-width:0; padding:1.15rem; }
+    .dashboard-card-header { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-bottom:0.8rem; }
+    .dashboard-section-link { border:0; background:transparent; color:var(--verde-claro); font:inherit; font-size:0.78rem; font-weight:700; cursor:pointer; padding:0.35rem 0.5rem; border-radius:6px; }
+    .dashboard-list { display:grid; gap:0.55rem; }
+    .dashboard-list-empty { color:var(--gris-calido); font-size:0.86rem; padding:0.65rem 0; }
+    .dashboard-item { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.7rem 0.8rem; background:#fff; border:1px solid rgba(46,107,62,0.08); border-radius:9px; min-width:0; }
+    .dashboard-item-info { display:flex; flex-direction:column; gap:0.2rem; min-width:0; }
+    .dashboard-item-info strong { color:var(--marron-oscuro); font-size:0.86rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dashboard-item-info span, .dashboard-item time { color:var(--gris-calido); font-size:0.76rem; }
+    .dashboard-item time { text-align:right; white-space:nowrap; }
+    .dashboard-item.urgente { border-left:3px solid #C0392B; }
+    .dashboard-item.proximo { border-left:3px solid #E67E22; }
+    .dashboard-subtitle { margin:0 0 0.85rem; }
+    .dashboard-comparisons { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.75rem; margin:0 0 1.25rem; }
+    .dashboard-comparison { padding:0.85rem 1rem; background:#fff; border:1px solid var(--crema-oscuro); border-radius:11px; box-shadow:0 2px 8px rgba(15,51,32,0.05); min-width:0; }
+    .dashboard-comparison span { display:block; color:var(--gris-calido); font-size:0.72rem; font-weight:800; letter-spacing:0.07em; text-transform:uppercase; }
+    .dashboard-comparison strong { display:block; margin-top:0.35rem; color:var(--marron-oscuro); font-size:0.96rem; }
+    .dashboard-comparison small { display:block; margin-top:0.25rem; color:var(--gris-calido); font-size:0.75rem; }
+    .dashboard-comparison-note { grid-column:1/-1; color:var(--gris-calido); font-size:0.74rem; text-align:right; }
+    .charts-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-bottom:1rem; }
+    @media (max-width: 1000px) { .stat-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 768px) {
+      .charts-grid, .dashboard-overview { grid-template-columns:1fr; }
+      .dashboard-comparisons { grid-template-columns:1fr; }
+      .main { padding:1rem; }
+      .dashboard-filter { align-items:flex-start; flex-direction:column; }
+      .dashboard-filter-controls { justify-content:flex-start; width:100%; }
+    }
+    @media (max-width: 500px) { .dashboard-filter-controls { align-items:stretch; flex-direction:column; } .dashboard-filter select, .dashboard-filter input, .dashboard-filter button { width:100%; } .dashboard-custom-range { align-items:stretch; flex-direction:column; } }
+    @media (max-width: 500px) { .stat-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0.6rem; } .stat-card { min-height:112px; padding:0.85rem 0.85rem 0.85rem 1rem; } .stat-label { font-size:0.64rem; letter-spacing:0.08em; } }
+    .chart-card { min-width:0; background:var(--blanco-roto); border-radius:14px; padding:1.5rem; border:1px solid var(--crema-oscuro); box-shadow:0 2px 12px var(--sombra); }
+    .chart-card canvas { max-width:100%; }
+    .chart-title { font-family:'Lato', sans-serif; font-size:1.05rem; color:var(--tierra); margin-bottom:0.55rem; display:flex; align-items:center; justify-content:space-between; gap:0.75rem; }
+    .chart-title span { min-width:0; }
+    .chart-title select { max-width:58%; min-height:36px; padding:0.35rem 0.6rem; border:1px solid var(--crema-oscuro); border-radius:8px; background:#fff; color:var(--marron-oscuro); font:inherit; font-size:0.75rem; }
+    .chart-empty { display:flex; min-height:190px; align-items:center; justify-content:center; padding:1.25rem; border:1px dashed var(--crema-oscuro); border-radius:10px; background:rgba(255,255,255,0.65); color:var(--gris-calido); text-align:center; font-size:0.85rem; line-height:1.5; }
+    .chart-note { margin:-0.2rem 0 0.75rem; color:var(--gris-calido); font-size:0.75rem; line-height:1.4; }
+    .toast { position:fixed; bottom:2rem; right:2rem; background:var(--marron-oscuro); color:var(--crema); padding:1rem 1.5rem; border-radius:10px; font-size:0.875rem; box-shadow:0 8px 25px rgba(0,0,0,0.3); transform:translateY(100px); opacity:0; transition:all 0.3s; z-index:1000; border-left:4px solid var(--dorado); max-width:320px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.error { border-left-color:#E74C3C; }
+    .toast.success { border-left-color:#4CAF50; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:var(--blanco-roto);
+      border-radius:16px;
+      width:90%;
+      max-width:600px;
+      max-height:78vh;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.4);
+      border:2px solid var(--dorado);
+    }
+    .modal-header { background:linear-gradient(135deg, var(--tierra), var(--tierra-claro)); color:var(--crema); padding:1.2rem 1.5rem; font-family:'Lato', sans-serif; font-size:1.1rem; display:flex; justify-content:space-between; align-items:center; border-radius:14px 14px 0 0; flex-shrink:0; }
+    .modal-close { background:none; border:none; color:var(--crema); font-size:1.4rem; cursor:pointer; }
+    .modal-body {
+      padding:1.5rem;
+      overflow-y:auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(15,51,32,0.35) transparent;
+      -ms-overflow-style: auto;
+      flex:1 1 auto;
+      min-height:0;
+    }
+    .modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--crema-oscuro); display:flex; gap:0.75rem; justify-content:flex-end; flex-shrink:0; }
+
+    .raza-modal .modal {
+      width:min(92vw, 780px);
+      border:1px solid rgba(170, 220, 185, 0.18);
+      background: #ffffff;
+      box-shadow: 0 28px 70px rgba(0,0,0,0.18);
+      color: #0f3320;
+    }
+    .raza-modal .modal-header {
+      background: #f4f7f5;
+      border-radius: 18px 18px 0 0;
+      padding: 1.1rem 1.4rem;
+      font-family: 'Lato', sans-serif;
+      font-weight: 700;
+      color: #0f3320;
+      border-bottom: 1px solid rgba(15,51,32,0.08);
+    }
+    .raza-modal .modal-body {
+      padding: 1.5rem 1.4rem 1rem;
+      background: #ffffff;
+    }
+    .raza-modal .modal-footer {
+      padding: 0.2rem 1.4rem 1.4rem;
+      border-top: 0;
+      background: #ffffff;
+    }
+    .raza-modal .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .raza-modal .form-group label {
+      color: #0f3320;
+      letter-spacing: 0.08em;
+    }
+    .raza-modal .form-group input,
+    .raza-modal .form-group select,
+    .raza-modal .form-group textarea {
+      background: #ffffff;
+      border:1px solid rgba(15,51,32,0.18);
+      color:#0f3320;
+      border-radius:12px;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+    }
+    .raza-modal .form-group input::placeholder,
+    .raza-modal .form-group textarea::placeholder {
+      color:rgba(15,51,32,0.55);
+    }
+    .raza-modal .form-group input:focus,
+    .raza-modal .form-group select:focus,
+    .raza-modal .form-group textarea:focus {
+      border-color:rgba(39,110,70,0.75);
+      box-shadow:0 0 0 3px rgba(39,110,70,0.10);
+    }
+    .raza-modal .modal-close {
+      background: #f0f3f0;
+      border:1px solid rgba(15,51,32,0.12);
+      color: #0f3320;
+      border-radius:10px;
+      width:36px;
+      height:36px;
+    }
+    .raza-modal .btn {
+      min-width: 150px;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 0.72rem 1.2rem;
+    }
+
+    .cliente-modal .modal {
+      width:min(92vw, 780px);
+      border:1px solid rgba(41, 128, 90, 0.18);
+      background: #ffffff;
+      box-shadow: 0 28px 70px rgba(0,0,0,0.18);
+      color: #0f3320;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .cliente-modal .modal-header {
+      background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+      border-radius: 0;
+      padding: 1.15rem 1.4rem;
+      font-family: 'Lato', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
+      border-bottom: 0;
+      min-height: 72px;
+    }
+    .cliente-modal .modal-body {
+      padding: 1.5rem 1.4rem 1rem;
+      background: #ffffff;
+    }
+    .cliente-modal .modal-footer {
+      padding: 0.2rem 1.4rem 1.4rem;
+      border-top: 0;
+      background: #ffffff;
+    }
+    .cliente-modal .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .cliente-modal .form-group label {
+      color: #0f3320;
+      letter-spacing: 0.08em;
+    }
+    .cliente-modal .form-group input,
+    .cliente-modal .form-group select,
+    .cliente-modal .form-group textarea {
+      background: #ffffff;
+      border:1px solid rgba(15,51,32,0.18);
+      color:#0f3320;
+      border-radius:12px;
+      min-height: 44px;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+    }
+    .cliente-modal .form-group input::placeholder,
+    .cliente-modal .form-group textarea::placeholder {
+      color:rgba(15,51,32,0.55);
+    }
+    .cliente-modal .form-group input:focus,
+    .cliente-modal .form-group select:focus,
+    .cliente-modal .form-group textarea:focus {
+      border-color:rgba(39,110,70,0.75);
+      box-shadow:0 0 0 3px rgba(39,110,70,0.10);
+    }
+    .cliente-modal .modal-close {
+      background: rgba(255,255,255,0.16);
+      border:1px solid rgba(255,255,255,0.28);
+      color: #ffffff;
+      border-radius:10px;
+      width:36px;
+      height:36px;
+      font-size:1.45rem;
+      line-height: 1;
+    }
+    .cliente-modal .btn {
+      min-width: 150px;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 0.72rem 1.2rem;
+    }
+    .empty-state { text-align:center; padding:4rem 2rem; color:var(--gris-calido); }
+    .empty-state .icon { font-size:4rem; margin-bottom:1rem; }
+    .loading { display:flex; align-items:center; justify-content:center; padding:3rem; gap:0.75rem; color:var(--gris-calido); }
+    .spinner { width:24px; height:24px; border:3px solid var(--crema-oscuro); border-top-color:var(--verde); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .realtime-badge { display:inline-flex; align-items:center; gap:0.4rem; background:rgba(76,175,80,0.15); color:var(--verde); border:1px solid rgba(76,175,80,0.3); padding:0.3rem 0.8rem; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
+
+    /* Ocultar línea decorativa como pediste */
+    .page-title::after { display:none; content:none; }
+
+    /* Modales extra */
+    .auth-form-panel { display:block; }
+    .auth-form-group textarea { min-height: 90px; }
+  </style>
+</head>
+<body>
+
+  <div id="auth-screen" class="visible">
+    <div class="auth-bg-pattern"></div>
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="auth-logo-icon"></span>
+        <div class="auth-logo-title">Rancho Ovino</div>
+        <div class="auth-logo-sub">Sistema de Gestión Ganadera</div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" data-tab="login">Iniciar Sesión</button>
+        <button class="auth-tab-btn" data-tab="register">Registrarse</button>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
+      <div id="form-login" class="auth-form-panel">
+        <div class="auth-form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="login-email" placeholder="correo@ejemplo.com" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="auth-form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="auth-btn" id="btn-login" onclick="doLogin()">Entrar al Sistema</button>
+        <div class="auth-divider">¿No tienes cuenta? Haz clic en <strong>Registrarse</strong></div>
+      </div>
+
+      <div id="form-register" class="auth-form-panel" style="display:none">
+        <div class="auth-form-group">
+          <label>Nombre Completo</label>
+          <input type="text" id="reg-nombre" placeholder="Tu nombre">
+        </div>
+        <div class="auth-form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="reg-email" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="auth-form-group">
+          <label>Teléfono (opcional)</label>
+          <input type="tel" id="reg-telefono" placeholder="+52 686 000 0000">
+        </div>
+        <div class="auth-form-group">
+          <label>Rol</label>
+          <select id="reg-rol">
+            <option value="productor">Productor</option>
+            <option value="veterinario">Veterinario</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="auth-form-group">
+          <label>Contraseña</label>
+          <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-form-group">
+          <label>Confirmar Contraseña</label>
+          <input type="password" id="reg-password2" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')doRegister()">
+        </div>
+        <button class="auth-btn" id="btn-register" onclick="doRegister()">Crear Cuenta</button>
+        <div class="auth-divider">¿Ya tienes cuenta? Haz clic en <strong>Iniciar Sesión</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-shell">
+    <header class="header">
+      <div class="header-brand">
+        <div class="header-sub">Sistema de Gestión Ganadera</div>
+      </div>
+      <div class="header-user">
+        <div class="user-dropdown">
+          <button class="user-chip" type="button" aria-expanded="false" aria-haspopup="menu">
+            <div class="user-avatar" id="user-avatar">VA</div>
+            <div class="user-name" id="user-display">Usuario</div>
+          </button>
+          <div class="user-menu" role="menu" aria-label="Menú de cuenta">
+            <button class="user-menu-item" type="button" role="menuitem" onclick="openUserProfile()">
+              <span class="user-config-icon"><span></span><span></span><span></span></span>
+              <span>Perfil</span>
+              <span class="user-menu-arrow">›</span>
+            </button>
+            <button class="user-menu-item" type="button" role="menuitem" onclick="openAccountSettings()">
+              <span class="user-config-icon"><span></span><span></span><span></span></span>
+              <span>Configuración</span>
+              <span class="user-menu-arrow">›</span>
+            </button>
+            <button class="user-menu-item danger" type="button" role="menuitem" onclick="doLogout()">
+              <span class="user-config-icon"><span></span><span></span><span></span></span>
+              <span>Cerrar sesión</span>
+              <span class="user-menu-arrow">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+<nav class="nav-tabs" aria-label="Navegación principal">
+  <button
+    class="nav-tab active"
+    type="button"
+    data-tab="inicio"
+    onclick="switchTab('inicio', event)">
+    Inicio
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="dashboard"
+    onclick="switchTab('dashboard', event)">
+    Dashboard
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="animales"
+    onclick="switchTab('animales', event)">
+    Animales
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="reproduccion"
+    onclick="switchTab('reproduccion', event)">
+    Reproducción
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="produccion"
+    onclick="switchTab('produccion', event)">
+    Producción
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="salud"
+    onclick="switchTab('salud', event)">
+    Salud
+  </button>
+
+  <button
+    class="nav-tab"
+    type="button"
+    data-tab="ventas"
+    onclick="switchTab('ventas', event)">
+    Ventas
+  </button>
+
+</nav>
+
+    <main class="main">
+      <div id="tab-inicio" class="tab-panel active">
+        <div class="page-header">
+          <h1 class="page-title">Resumen del Rancho</h1>
+          <span class="realtime-badge" id="dashboard-updated"><span class="status-dot"></span>Resumen actualizado</span>
+        </div>
+
+        <section class="dashboard-filter" aria-label="Filtrar resumen por periodo">
+          <div class="dashboard-filter-copy">
+            <strong>Vista del rancho</strong>
+            <span id="dashboard-period-caption">Indicadores del periodo seleccionado</span>
+          </div>
+          <div class="dashboard-filter-controls">
+            <label class="sr-only" for="dashboard-period">Periodo del resumen</label>
+            <select id="dashboard-period" onchange="handleDashboardPeriodChange('dashboard')">
+              <option value="month">Este mes</option>
+              <option value="90days">Últimos 90 días</option>
+              <option value="year">Este año</option>
+              <option value="all">Todo el historial</option>
+              <option value="custom">Fechas personalizadas</option>
+            </select>
+            <div class="dashboard-custom-range" id="dashboard-custom-range" hidden>
+              <label class="sr-only" for="dashboard-date-from">Fecha inicial</label>
+              <input type="date" id="dashboard-date-from" aria-label="Fecha inicial">
+              <label class="sr-only" for="dashboard-date-to">Fecha final</label>
+              <input type="date" id="dashboard-date-to" aria-label="Fecha final">
+              <button type="button" onclick="applyDashboardPeriod('dashboard')">Aplicar</button>
+            </div>
+            <span class="dashboard-range-error" id="dashboard-range-error" role="alert"></span>
+          </div>
+        </section>
+
+        <div class="stat-cards" id="stat-cards">
+          <button class="stat-card verde" type="button" onclick="switchTab('animales')" aria-label="Ver animales Activos">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Animales Activos</div>
+          </button>
+          <button class="stat-card dorado" type="button" onclick="switchTab('animales')" aria-label="Ver Machos Activos">
+            <div class="stat-value" id="stat-Machos">—</div>
+            <div class="stat-label">Machos Activos</div>
+          </button>
+          <button class="stat-card tierra" type="button" onclick="switchTab('animales')" aria-label="Ver Hembras activas">
+            <div class="stat-value" id="stat-Hembras">—</div>
+            <div class="stat-label">Hembras activas</div>
+          </button>
+          <button class="stat-card dorado" type="button" onclick="switchTab('reproduccion')" aria-label="Ver Hembras en gestación">
+            <div class="stat-value" id="stat-Gestando">—</div>
+            <div class="stat-label">Hembras gestantes</div>
+          </button>
+          <button class="stat-card dorado" type="button" onclick="switchTab('reproduccion')" aria-label="Ver partos estimados para los próximos 30 días">
+            <div class="stat-value" id="stat-partos-proximos">—</div>
+            <div class="stat-label">Partos en próximos 30 días</div>
+          </button>
+          <button class="stat-card rojo" type="button" onclick="switchTab('salud')" aria-label="Ver eventos de salud del mes">
+            <div class="stat-value" id="stat-eventos-salud">—</div>
+            <div class="stat-label">Eventos de salud del periodo</div>
+          </button>
+          <button class="stat-card verde" type="button" onclick="switchTab('ventas')" aria-label="Ver ventas del mes">
+            <div class="stat-value" id="stat-ventas-total">—</div>
+            <div class="stat-label">Ventas del periodo</div>
+          </button>
+          <button class="stat-card tierra" type="button" onclick="switchTab('produccion')" aria-label="Ver registros de peso del mes">
+            <div class="stat-value" id="stat-pesos-mes">—</div>
+            <div class="stat-label">Pesajes del periodo</div>
+          </button>
+        </div>
+
+        <h2 class="dashboard-subtitle">Atención y actividad reciente</h2>
+        <div class="dashboard-overview">
+          <section class="dashboard-card" aria-labelledby="dashboard-births-title">
+            <div class="dashboard-card-header">
+              <h2 id="dashboard-births-title">Próximos partos</h2>
+              <button class="dashboard-section-link" type="button" onclick="switchTab('reproduccion')">Ver reproducción</button>
+            </div>
+            <div class="dashboard-list" id="dashboard-births-list"></div>
+          </section>
+          <section class="dashboard-card" aria-labelledby="dashboard-health-title">
+            <div class="dashboard-card-header">
+              <h2 id="dashboard-health-title">Salud reciente</h2>
+              <button class="dashboard-section-link" type="button" onclick="switchTab('salud')">Ver salud</button>
+            </div>
+            <div class="dashboard-list" id="dashboard-health-list"></div>
+          </section>
+          <section class="dashboard-card" aria-labelledby="dashboard-sales-title">
+            <div class="dashboard-card-header">
+              <h2 id="dashboard-sales-title">Ventas recientes</h2>
+              <button class="dashboard-section-link" type="button" onclick="switchTab('ventas')">Ver ventas</button>
+            </div>
+            <div class="dashboard-list" id="dashboard-sales-list"></div>
+          </section>
+          <section class="dashboard-card" aria-labelledby="dashboard-weights-title">
+            <div class="dashboard-card-header">
+              <h2 id="dashboard-weights-title">Últimos pesajes</h2>
+              <button class="dashboard-section-link" type="button" onclick="switchTab('produccion')">Ver producción</button>
+            </div>
+            <div class="dashboard-list" id="dashboard-weights-list"></div>
+          </section>
+        </div>
+
+      </div>
+
+      <div id="tab-dashboard" class="tab-panel">
+        <div class="page-header">
+          <h1 class="page-title">Dashboard</h1>
+          <span class="realtime-badge"><span class="status-dot"></span>Indicadores y tendencias</span>
+        </div>
+        <section class="dashboard-filter" aria-label="Filtrar gráficas por periodo">
+          <div class="dashboard-filter-copy">
+            <strong>Periodo de las gráficas</strong>
+            <span id="chart-dashboard-period-caption">Ventas, salud y pesos del periodo; estado del rebaño actual</span>
+          </div>
+          <div class="dashboard-filter-controls">
+            <label class="sr-only" for="chart-dashboard-period">Periodo de las gráficas</label>
+            <select id="chart-dashboard-period" onchange="handleDashboardPeriodChange('chart-dashboard')">
+              <option value="month">Este mes</option>
+              <option value="90days">Últimos 90 días</option>
+              <option value="year">Este año</option>
+              <option value="all">Todo el historial</option>
+              <option value="custom">Fechas personalizadas</option>
+            </select>
+            <div class="dashboard-custom-range" id="chart-dashboard-custom-range" hidden>
+              <label class="sr-only" for="chart-dashboard-date-from">Fecha inicial</label>
+              <input type="date" id="chart-dashboard-date-from" aria-label="Fecha inicial">
+              <label class="sr-only" for="chart-dashboard-date-to">Fecha final</label>
+              <input type="date" id="chart-dashboard-date-to" aria-label="Fecha final">
+              <button type="button" onclick="applyDashboardPeriod('chart-dashboard')">Aplicar</button>
+            </div>
+            <span class="dashboard-range-error" id="chart-dashboard-range-error" role="alert"></span>
+          </div>
+        </section>
+        <h2 class="dashboard-subtitle">Comparación con el periodo anterior</h2>
+        <div class="dashboard-comparisons" id="dashboard-comparisons" aria-live="polite"></div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Estado actual del rebaño</span>
+              <label class="sr-only" for="chart-estado-sexo">Filtrar estado del rebaño por sexo</label>
+              <select id="chart-estado-sexo" aria-label="Filtrar estado actual del rebaño por sexo" onchange="renderDashboardHerdChart()">
+                <option value="">Todos</option>
+                <option value="Macho">Machos</option>
+                <option value="Hembra">Hembras</option>
+              </select>
+            </div>
+            <p class="chart-note" id="chart-estado-note">Distribución actual entre animales Activos, Vendidos y Muertos.</p>
+            <canvas id="chartEstado" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><span>Resultados de reproducción</span></div>
+            <p class="chart-note">Empadres registrados por estado: Gestando, parieron y Fallidos.</p>
+            <canvas id="chartReproduccion" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Evolución de peso por animal</span>
+              <label class="sr-only" for="chart-peso-animal">Animal para consultar su peso</label>
+              <select id="chart-peso-animal" aria-label="Seleccionar animal para consultar su peso" onchange="renderDashboardWeightChart()">
+                <option value="">Seleccionar animal...</option>
+              </select>
+            </div>
+            <p class="chart-note">Cada punto muestra el peso registrado del animal seleccionado.</p>
+            <canvas id="chartPesos" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><span>Eventos de salud por tipo</span></div>
+            <p class="chart-note">Cantidad de registros dentro del periodo seleccionado.</p>
+            <canvas id="chartSalud" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><span>Ventas por mes</span></div>
+            <p class="chart-note">Importes totales registrados dentro del periodo seleccionado.</p>
+            <canvas id="chartVentas" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-animales" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">Registro de Animales</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-animal')">+ Registrar Animal</button>
+          </div>
+        </div>
+        <div class="table-toolbar" id="filters-table-animales">
+          <input type="search" id="search-table-animales" placeholder="Buscar animal por ID, nombre, raza..." oninput="applyTableFilters('table-animales')">
+          <select aria-label="Filtrar animales por sexo" data-filter-column="2" data-filter-label="Todos los sexos" onchange="applyTableFilters('table-animales')"><option value="">Todos los sexos</option></select>
+          <select aria-label="Filtrar animales por estado" data-filter-column="5" data-filter-label="Todos los estados" onchange="applyTableFilters('table-animales')"><option value="">Todos los estados</option></select>
+        </div>
+        <div id="table-animales" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-reproduccion" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">Reproducción</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-reproduccion')">+ Nuevo Empadre</button>
+          </div>
+        </div>
+        <div class="table-toolbar" id="filters-table-reproduccion">
+          <input type="search" id="search-table-reproduccion" placeholder="Buscar por Hembra, Macho o notas..." oninput="applyTableFilters('table-reproduccion')">
+          <select aria-label="Filtrar reproducción por estado" data-filter-column="6" data-filter-label="Todos los estados" onchange="applyTableFilters('table-reproduccion')"><option value="">Todos los estados</option></select>
+          <select aria-label="Filtrar reproducción por Hembra" data-filter-column="0" data-filter-label="Todas las Hembras" onchange="applyTableFilters('table-reproduccion')"><option value="">Todas las Hembras</option></select>
+        </div>
+        <div id="table-reproduccion" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-produccion" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">Producción (Pesos)</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-produccion')">+ Registrar Peso</button>
+          </div>
+        </div>
+        <div class="table-toolbar" id="filters-table-produccion">
+          <input type="search" id="search-table-produccion" placeholder="Buscar por animal, fecha u observaciones..." oninput="applyTableFilters('table-produccion')">
+          <select aria-label="Filtrar producción por animal" data-filter-column="0" data-filter-label="Todos los animales" onchange="applyTableFilters('table-produccion')"><option value="">Todos los animales</option></select>
+          <select aria-label="Filtrar producción por nombre" data-filter-column="1" data-filter-label="Todos los nombres" onchange="applyTableFilters('table-produccion')"><option value="">Todos los nombres</option></select>
+        </div>
+        <div id="table-produccion" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-salud" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">Salud Animal</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="openModal('modal-salud')">+ Registrar Evento</button>
+          </div>
+        </div>
+        <div class="table-toolbar" id="filters-table-salud">
+          <input type="search" id="search-table-salud" placeholder="Buscar por animal, diagnóstico o medicamento..." oninput="applyTableFilters('table-salud')">
+          <select aria-label="Filtrar salud por tipo" data-filter-column="2" data-filter-label="Todos los tipos" onchange="applyTableFilters('table-salud')"><option value="">Todos los tipos</option></select>
+          <select aria-label="Filtrar salud por animal" data-filter-column="0" data-filter-label="Todos los animales" onchange="applyTableFilters('table-salud')"><option value="">Todos los animales</option></select>
+        </div>
+        <div id="table-salud" class="table-wrap"></div>
+      </div>
+
+      <div id="tab-ventas" class="tab-panel">
+        <div class="section-header">
+          <h1 class="page-title">Ventas</h1>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <span class="realtime-badge"><span class="status-dot" style="background:#4CAF50;animation:pulse 2s infinite"></span>Tiempo Real</span>
+            <button class="btn btn-primary" onclick="renderClientesSelect(); populateVentaAnimalSelect(); openModal('modal-venta')">+ Nueva Venta</button>
+          </div>
+        </div>
+        <div class="table-toolbar" id="filters-table-ventas">
+          <input type="search" id="search-table-ventas" placeholder="Buscar por cliente, animal o notas..." oninput="applyTableFilters('table-ventas')">
+          <select aria-label="Filtrar ventas por tipo" data-filter-column="2" data-filter-label="Todos los tipos" onchange="applyTableFilters('table-ventas')"><option value="">Todos los tipos</option></select>
+          <select aria-label="Filtrar ventas por cliente" data-filter-column="1" data-filter-label="Todos los clientes" onchange="applyTableFilters('table-ventas')"><option value="">Todos los clientes</option></select>
+        </div>
+        <div id="table-ventas" class="table-wrap"></div>
+      </div>
+    </main>
+
+    <!-- MODALES -->
+    <div class="modal-overlay" id="modal-user-profile" role="dialog" aria-modal="true" aria-labelledby="user-profile-title">
+      <div class="modal">
+        <div class="modal-header">
+          <span id="user-profile-title">Mi perfil</span>
+          <button class="modal-close" type="button" aria-label="Cerrar perfil" onclick="closeModal('modal-user-profile')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="profile-name">Nombre completo *</label>
+              <input type="text" id="profile-name" autocomplete="name" maxlength="120">
+            </div>
+            <div class="form-group">
+              <label for="profile-phone">Teléfono</label>
+              <input type="tel" id="profile-phone" autocomplete="tel" maxlength="40">
+            </div>
+            <div class="form-group">
+              <label for="profile-email">Correo electrónico</label>
+              <input type="email" id="profile-email" readonly>
+            </div>
+            <div class="form-group">
+              <label for="profile-role">Rol</label>
+              <input type="text" id="profile-role" readonly>
+            </div>
+          </div>
+          <p class="profile-form-message" id="profile-form-message" role="alert" hidden></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" type="button" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-user-profile')">Cancelar</button>
+          <button class="btn btn-primary" id="profile-save-button" type="button" onclick="saveUserProfile()">Guardar perfil</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-account-settings" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
+      <div class="modal">
+        <div class="modal-header">
+          <span id="account-settings-title">Seguridad de la cuenta</span>
+          <button class="modal-close" type="button" aria-label="Cerrar configuración" onclick="closeModal('modal-account-settings')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--gris-calido);font-size:0.85rem;margin-bottom:1rem">Cambia la contraseña de acceso a tu cuenta. Necesitarás confirmar tu contraseña actual.</p>
+          <div class="form-group">
+            <label for="account-current-password">Contraseña actual</label>
+            <input type="password" id="account-current-password" autocomplete="current-password">
+          </div>
+          <div class="form-group">
+            <label for="account-new-password">Nueva contraseña</label>
+            <input type="password" id="account-new-password" autocomplete="new-password" minlength="6">
+          </div>
+          <div class="form-group">
+            <label for="account-confirm-password">Confirmar nueva contraseña</label>
+            <input type="password" id="account-confirm-password" autocomplete="new-password" minlength="6" onkeydown="if(event.key==='Enter')changeAccountPassword()">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" type="button" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-account-settings')">Cancelar</button>
+          <button class="btn btn-primary" id="password-save-button" type="button" onclick="changeAccountPassword()">Actualizar contraseña</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-animal">
+      <div class="modal">
+        <div class="modal-header">
+          <span> Registrar Animal</span>
+          <button class="modal-close" onclick="closeModal('modal-animal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Identificador *</label><input type="text" id="a-identificador" placeholder="Ej: B-001"></div>
+            <div class="form-group"><label>Nombre</label><input type="text" id="a-nombre" placeholder="Ej: Lupita"></div>
+            <div class="form-group"><label>Sexo *</label>
+              <select id="a-sexo"><option value="">Seleccionar...</option><option value="Macho">Macho</option><option value="Hembra">Hembra</option></select>
+            </div>
+            <div class="form-group"><label>Raza</label><select id="a-raza" onchange="onRazaChange('a-raza')"><option value="">Seleccionar raza...</option></select></div>
+            <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="a-nacimiento"></div>
+            <div class="form-group"><label>Peso Inicial (kg)</label><input type="number" id="a-peso-inicial" step="0.01"></div>
+            <div class="form-group"><label>Estado General</label>
+              <select id="a-estado"><option value="Activo">Activo</option><option value="Vendido">Vendido</option><option value="Muerto">Muerto</option></select>
+            </div>
+            <div class="form-group"><label>Estado Productivo</label>
+              <select id="a-estado-productivo">
+                <option value="">Seleccionar...</option>
+                <option value="gestante">Gestante</option>
+                <option value="parida">Parida</option>
+                <option value="servicio">Servicio</option>
+                <option value="primala">Primala</option>
+                <option value="cordera">Cordera</option>
+                <option value="lactando">Lactando</option>
+                <option value="destetada">Destetada</option>
+                <option value="semental">Semental</option>
+                <option value="engorda">Engorda</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Número de Partos</label><input type="number" id="a-num-partos" min="0" placeholder="0"></div>
+            <div class="form-group"><label>Tipo de Nacimiento</label>
+              <select id="a-tipo-nacimiento"><option value="">Seleccionar...</option><option value="sencillo">Sencillo</option><option value="doble">Doble</option><option value="triple">Triple</option></select>
+            </div>
+            <div class="form-group"><label>Padre</label><select id="a-padre" onchange="togglePadreManual()"><option value="">Ninguno (registrar manualmente)</option></select></div>
+            <div class="form-group" id="wrap-padre-manual"><label>Nombre del Padre (manual)</label><input type="text" id="a-padre-manual" placeholder="Nombre si no está registrado"></div>
+            <div class="form-group"><label>Madre</label><select id="a-madre" onchange="toggleMadreManual()"><option value="">Ninguna (registrar manualmente)</option></select></div>
+            <div class="form-group" id="wrap-madre-manual"><label>Nombre de la Madre (manual)</label><input type="text" id="a-madre-manual" placeholder="Nombre si no está registrada"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="a-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-animal')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveAnimal()"> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-animal">
+      <div class="modal">
+        <div class="modal-header"><span> Editar Animal</span><button class="modal-close" onclick="closeModal('modal-edit-animal')">&times;</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ea-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Identificador *</label><input type="text" id="ea-identificador"></div>
+            <div class="form-group"><label>Nombre</label><input type="text" id="ea-nombre"></div>
+            <div class="form-group"><label>Sexo *</label><select id="ea-sexo"><option value="">Seleccionar...</option><option value="Macho">Macho</option><option value="Hembra">Hembra</option></select></div>
+            <div class="form-group"><label>Raza</label><select id="ea-raza" onchange="onRazaChange('ea-raza')"></select></div>
+            <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="ea-nacimiento"></div>
+            <div class="form-group"><label>Estado General</label><select id="ea-estado"><option value="Activo">Activo</option><option value="Vendido">Vendido</option><option value="Muerto">Muerto</option></select></div>
+            <div class="form-group"><label>Estado Productivo</label><select id="ea-estado-productivo"><option value="">Ninguno</option><option value="gestante">Gestante</option><option value="parida">Parida</option><option value="servicio">Servicio</option><option value="primala">Primala</option><option value="cordera">Cordera</option><option value="lactando">Lactando</option><option value="destetada">Destetada</option><option value="semental">Semental</option><option value="engorda">Engorda</option></select></div>
+            <div class="form-group"><label>Número de Partos</label><input type="number" id="ea-num-partos" min="0"></div>
+            <div class="form-group"><label>Tipo de Nacimiento</label><select id="ea-tipo-nacimiento"><option value="">Ninguno</option><option value="sencillo">Sencillo</option><option value="doble">Doble</option><option value="triple">Triple</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="ea-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-animal')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateAnimal()"> Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-reproduccion">
+      <div class="modal">
+        <div class="modal-header"><span> Registrar Empadre</span><button class="modal-close" onclick="closeModal('modal-reproduccion')">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Hembra *</label><select id="r-Hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="r-Macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="r-empadre"></div>
+            <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="r-parto-real"></div>
+            <div class="form-group"><label>Número de Crías</label><input type="number" id="r-crias" min="0" placeholder="0"></div>
+            <div class="form-group"><label>Estado</label><select id="r-estado"><option value="Gestando">Gestando</option><option value="Pario">Parió</option><option value="Fallido">Fallido</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="r-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="r-notas-repro" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-reproduccion')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveReproduccion()"> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-editar-parto">
+      <div class="modal">
+        <div class="modal-header"><span> Actualizar Parto</span><button class="modal-close" onclick="closeModal('modal-editar-parto')">&times;</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ep-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Hembra *</label><select id="ep-Hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="ep-Macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="ep-empadre"></div>
+            <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="ep-parto-real"></div>
+            <div class="form-group"><label>Número de Crías</label><input type="number" id="ep-crias" min="0" placeholder="0"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Estado *</label><select id="ep-estado"><option value="Gestando">Gestando</option><option value="Pario">Parió</option><option value="Fallido">Fallido</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="ep-observaciones" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-editar-parto')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateParto()"> Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-produccion">
+      <div class="modal">
+        <div class="modal-header"><span> Registrar Peso</span><button class="modal-close" onclick="closeModal('modal-produccion')">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Animal *</label><select id="p-animal"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="p-fecha"></div>
+            <div class="form-group"><label>Peso (kg) *</label><input type="number" id="p-peso" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="p-observaciones" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-produccion')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveProduccion()"> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-produccion" role="dialog" aria-modal="true" aria-labelledby="edit-production-title">
+      <div class="modal">
+        <div class="modal-header">
+          <span id="edit-production-title">Editar Registro de Peso</span>
+          <button class="modal-close" type="button" aria-label="Cerrar edición de peso" onclick="closeModal('modal-edit-produccion')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="ep2-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="ep2-animal">Animal *</label>
+              <select id="ep2-animal" required></select>
+            </div>
+            <div class="form-group">
+              <label for="ep2-fecha">Fecha *</label>
+              <input type="date" id="ep2-fecha" required>
+            </div>
+            <div class="form-group">
+              <label for="ep2-peso">Peso (kg) *</label>
+              <input type="number" id="ep2-peso" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label for="ep2-obs">Observaciones</label>
+              <textarea id="ep2-obs" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" type="button" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-produccion')">Cancelar</button>
+          <button class="btn btn-primary" type="button" id="ep2-save" onclick="updateProduccion()">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+<div class="modal-overlay" id="modal-editar-parto">
+  <div class="modal">
+    <div class="modal-header">
+      <span> Actualizar Parto</span>
+      <button class="modal-close" onclick="closeModal('modal-editar-parto')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Hembra *</label>
+          <select id="ep-Hembra"><option value="">Seleccionar...</option></select>
+        </div>
+
+        <div class="form-group">
+          <label>Macho *</label>
+          <select id="ep-Macho"><option value="">Seleccionar...</option></select>
+        </div>
+
+        <div class="form-group">
+          <label>Fecha Empadre *</label>
+          <input type="date" id="ep-empadre">
+        </div>
+
+        <div class="form-group">
+          <label>Fecha Parto Real</label>
+          <input type="date" id="ep-parto-real">
+        </div>
+
+        <div class="form-group">
+          <label>Número de Crías</label>
+          <input type="number" id="ep-crias" min="0" placeholder="0">
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Estado *</label>
+          <select id="ep-estado">
+            <option value="Gestando">Gestando</option>
+            <option value="Pario">Parió</option>
+            <option value="Fallido">Fallido</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Observaciones</label>
+          <textarea id="ep-observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-editar-parto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="updateParto()"> Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+    <div class="modal-overlay" id="modal-salud">
+      <div class="modal">
+        <div class="modal-header"><span> Registrar Evento de Salud</span><button class="modal-close" onclick="closeModal('modal-salud')">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Animal *</label><select id="s-animal"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="s-fecha"></div>
+            <div class="form-group"><label>Tipo *</label><select id="s-tipo"><option value="">Seleccionar...</option><option value="enfermedad">Enfermedad</option><option value="Vacuna">Vacuna</option><option value="Tratamiento">Tratamiento</option><option value="Desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Medicamento</label><input type="text" id="s-medicamento"></div>
+            <div class="form-group"><label>Dosis</label><input type="text" id="s-dosis"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="s-diagnostico" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="s-Tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="s-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="s-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-salud')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveSalud()"> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-salud">
+      <div class="modal">
+        <div class="modal-header"><span> Editar Evento de Salud</span><button class="modal-close" onclick="closeModal('modal-edit-salud')">&times;</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="es-id">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="es-fecha"></div>
+            <div class="form-group"><label>Tipo *</label><select id="es-tipo"><option value="enfermedad">Enfermedad</option><option value="Vacuna">Vacuna</option><option value="Tratamiento">Tratamiento</option><option value="Desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Medicamento</label><input type="text" id="es-medicamento"></div>
+            <div class="form-group"><label>Dosis</label><input type="text" id="es-dosis"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="es-diagnostico" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="es-Tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="es-observaciones" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="es-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-salud')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateSalud()"> Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-venta">
+      <div class="modal">
+        <div class="modal-header"><span> Nueva Venta</span><button class="modal-close" onclick="closeModal('modal-venta')">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="v-fecha"></div>
+            <div class="form-group"><label>Cliente *</label><select id="v-cliente" onchange="onClienteChange('v-cliente')"><option value="">Seleccionar cliente...</option></select></div>
+            <div class="form-group"><label>Tipo de Venta *</label><select id="v-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
+            <div class="form-group"><label>Animal Vendido / origen de carne *</label><select id="v-animal"><option value="">Seleccionar animal...</option></select></div>
+            <div class="form-group"><label>Total ($)</label><input type="number" id="v-total" step="0.01" placeholder="0.00"></div>
+            <div class="form-group"><label>Costo ($)</label><input type="number" id="v-costo" step="0.01" placeholder="0.00"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="v-notas" rows="2" placeholder="Ej: Se vendió a cuenta de carne 20 kg..."></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVenta()"> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-edit-venta">
+      <div class="modal">
+        <div class="modal-header"><span> Editar Venta</span><button class="modal-close" onclick="closeModal('modal-edit-venta')">&times;</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="ev-id">
+          <input type="hidden" id="ev-detalle-id">
+          <input type="hidden" id="ev-animal-original">
+          <div class="form-grid">
+            <div class="form-group"><label>Fecha *</label><input type="date" id="ev-fecha"></div>
+            <div class="form-group"><label>Cliente</label><input type="text" id="ev-cliente"></div>
+            <div class="form-group"><label>Tipo de Venta</label><select id="ev-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
+            <div class="form-group"><label>Animal Vendido / origen de carne</label><select id="ev-animal"><option value="">Seleccionar animal...</option></select></div>
+            <div id="ev-animal-info" style="display:none;grid-column:1/-1;color:var(--gris-calido);font-size:0.85rem"></div>
+            <div class="form-group"><label>Total ($)</label><input type="number" id="ev-total" step="0.01"></div>
+            <div class="form-group"><label>Costo ($)</label><input type="number" id="ev-costo" step="0.01"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:var(--crema-oscuro);color:var(--marron-oscuro)" onclick="closeModal('modal-edit-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="updateVenta()"> Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay raza-modal" id="modal-raza">
+      <div class="modal">
+        <div class="modal-header">
+          <span>Agregar nueva raza</span>
+          <button class="modal-close" onclick="closeModal('modal-raza')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre de la nueva raza</label>
+              <input type="text" id="raza-nombre" placeholder="Ej: Dorper" onkeydown="if(event.key==='Enter'){guardarNuevaRaza();}">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:#E7F1EC;color:#173d2d;border:1px solid rgba(23,61,45,0.14)" onclick="closeModal('modal-raza')">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarNuevaRaza()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay cliente-modal" id="modal-cliente">
+      <div class="modal">
+        <div class="modal-header">
+          <span>Agregar nuevo cliente</span>
+          <button class="modal-close" onclick="closeModal('modal-cliente')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre del cliente</label>
+              <input type="text" id="cliente-nombre" placeholder="Ej: Grupo Santa Fe" onkeydown="if(event.key==='Enter'){guardarNuevoCliente();}">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="background:#E7F1EC;color:#173d2d;border:1px solid rgba(23,61,45,0.14)" onclick="closeModal('modal-cliente')">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarNuevoCliente()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    // Esto lo dejamos vacío en esta parte, se completa en Parte 2 y Parte 3
+  </script>
+
+</body>
+</html>
+<script>
+  const { createClient } = supabase;
+  const SUPABASE_URL = 'https://oblfoqmtfnldmtqnwyfv.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_WcDDqRl4W5LbegNze8-wXw_cAERpKIH';
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let animalesCache = [];
+  let ventasCache = [];
+  let detalleVentasCache = [];
+  let clientesCache = [];
+  let charts = {};
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('open');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function formatMoney(n) {
+    if (n == null) return '—';
+    return '$' + parseFloat(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function badge(val, map) {
+    const cls = map[val] || '';
+    return `<span class="badge ${cls}">${val || '—'}</span>`;
+  }
+
+  function loading(containerId) {
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML = '<div class="loading"><div class="spinner"></div> Cargando datos...</div>';
+  }
+
+  function normalizeFilterText(value) {
+    return value.trim().toLocaleLowerCase('es-MX').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function refreshTableFilterOptions(tableId) {
+    const toolbar = document.getElementById('filters-' + tableId);
+    const table = document.getElementById(tableId)?.querySelector('table');
+    if (!toolbar) return;
+
+    toolbar.querySelectorAll('select[data-filter-column]').forEach(select => {
+      const columnIndex = Number(select.dataset.filterColumn);
+      const label = select.dataset.filterLabel || 'Todos';
+      const current = select.value;
+      const values = table
+        ? [...new Set(Array.from(table.querySelectorAll('tbody tr'))
+          .filter(row => !row.dataset.filterEmpty)
+          .map(row => row.cells[columnIndex]?.textContent.trim())
+          .filter(value => value && value !== '—'))]
+          .sort((a, b) => a.localeCompare(b, 'es-MX'))
+        : [];
+
+      select.replaceChildren(new Option(label, ''));
+      values.forEach(value => select.add(new Option(value, value)));
+      select.value = values.includes(current) ? current : '';
+    });
+  }
+
+  function applyTableFilters(tableId) {
+    const table = document.getElementById(tableId)?.querySelector('table');
+    const toolbar = document.getElementById('filters-' + tableId);
+    const body = table?.tBodies[0];
+    if (!table || !toolbar || !body) return;
+
+    const query = normalizeFilterText(toolbar.querySelector('input[type="search"]')?.value || '');
+    const filters = Array.from(toolbar.querySelectorAll('select[data-filter-column]'))
+      .map(select => ({
+        columnIndex: Number(select.dataset.filterColumn),
+        value: normalizeFilterText(select.value)
+      }))
+      .filter(filter => filter.value);
+    const rows = Array.from(body.rows).filter(row => !row.dataset.filterEmpty);
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const matchesSearch = !query || normalizeFilterText(row.textContent).includes(query);
+      const matchesFilters = filters.every(({ columnIndex, value }) =>
+        normalizeFilterText(row.cells[columnIndex]?.textContent || '') === value
+      );
+      row.hidden = !(matchesSearch && matchesFilters);
+      if (!row.hidden) visibleCount++;
+    });
+
+    let emptyRow = body.querySelector('tr[data-filter-empty]');
+    if (visibleCount === 0 && rows.length > 0) {
+      if (!emptyRow) {
+        emptyRow = document.createElement('tr');
+        emptyRow.dataset.filterEmpty = 'true';
+        const cell = document.createElement('td');
+        cell.colSpan = table.tHead?.rows[0]?.cells.length || 1;
+        cell.textContent = 'No se encontraron registros con esos criterios.';
+        emptyRow.appendChild(cell);
+        body.appendChild(emptyRow);
+      }
+      emptyRow.hidden = false;
+    } else if (emptyRow) {
+      emptyRow.hidden = true;
+    }
+  }
+
+  function refreshTableView(tableId) {
+    refreshTableFilterOptions(tableId);
+    applyTableFilters(tableId);
+  }
+
+  function emptyState(icon, msg) {
+    return `<div class="empty-state"><div class="icon">${icon}</div><p>${msg}</p></div>`;
+  }
+
+  async function deleteRecord(table, id) {
+    if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
+    const { error } = await db.from(table).delete().eq('id', id);
+    if (error) {
+      showToast('Error al eliminar: ' + error.message, 'error');
+      return;
+    }
+    showToast(' Registro eliminado');
+    await refreshAppData();
+  }
+
+function switchTab(name, ev) {
+  const panel = document.getElementById('tab-' + name);
+
+  if (!panel) {
+    console.error('No existe el panel: tab-' + name);
+    return;
+  }
+
+  // Quitar selección de todos los apartados
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.remove('active');
+  });
+
+  // Quitar selección de todos los botones
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // Mostrar el apartado seleccionado
+  panel.classList.add('active');
+
+  // Marcar visualmente el botón seleccionado
+  const btn = ev?.currentTarget ||
+    document.querySelector(`.nav-tab[data-tab="${name}"]`) ||
+    document.querySelector(`.nav-tab[onclick*="'${name}'"]`);
+
+  if (btn) {
+    btn.classList.add('active');
+  }
+  if (name === 'dashboard') {
+    requestAnimationFrame(() => Object.values(charts).forEach(chart => chart.resize()));
+  }
+}
+
+  async function refreshAppData() {
+    await loadAnimales();
+    await Promise.all([
+      loadReproduccion(),
+      loadProduccion(),
+      loadSalud(),
+      loadVentas(),
+      loadDetalleVenta(),
+      loadDashboard()
+    ]);
+  }
+
+  // ============ ANIMALES ============
+  const RAZAS_BASE = ['Pelibuey', 'Dorper', 'Blackbelly', 'Suffolk', 'Rambouillet', 'Katahdin', 'Merino', 'Corriedale'];
+
+  async function loadRazas() {
+    const { data } = await db.from('razas').select('nombre').order('nombre');
+    if (data && data.length) {
+      const nombres = data.map(r => r.nombre);
+      if (nombres.length) {
+        RAZAS_BASE.splice(0, RAZAS_BASE.length, ...nombres);
+      }
+    }
+    renderRazasSelect();
+  }
+
+  function renderRazasSelect() {
+    const sel = document.getElementById('a-raza');
+    const selEdit = document.getElementById('ea-raza');
+    const build = () => {
+      const current = arguments[0];
+      const options = '<option value="">Seleccionar raza...</option>' +
+        RAZAS_BASE.map(r => `<option value="${r}">${r}</option>`).join('') +
+        '<option value="__nueva__"> Agregar nueva raza...</option>';
+      return options;
+    };
+
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = build(current);
+      if (current) sel.value = current;
+    }
+    if (selEdit) {
+      const current = selEdit.value;
+      selEdit.innerHTML = build(current);
+      if (current) selEdit.value = current;
+    }
+  }
+
+  function openRazaModal(targetSelectId) {
+    const modal = document.getElementById('modal-raza');
+    const input = document.getElementById('raza-nombre');
+    if (!modal || !input) return;
+
+    modal.dataset.targetSelect = targetSelectId || 'a-raza';
+    input.value = '';
+    input.focus();
+    openModal('modal-raza');
+  }
+
+  async function guardarNuevaRaza() {
+    const modal = document.getElementById('modal-raza');
+    const input = document.getElementById('raza-nombre');
+    const nombre = input?.value.trim();
+
+    if (!nombre) {
+      if (input) input.focus();
+      return;
+    }
+
+    const { error } = await db.from('razas').insert({ nombre }).select();
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      return;
+    }
+
+    if (!RAZAS_BASE.includes(nombre)) RAZAS_BASE.push(nombre);
+    RAZAS_BASE.sort();
+    renderRazasSelect();
+
+    const targetSelectId = modal?.dataset.targetSelect || 'a-raza';
+    const targetSelect = document.getElementById(targetSelectId);
+    if (targetSelect) targetSelect.value = nombre;
+
+    closeModal('modal-raza');
+    showToast(' Raza agregada correctamente');
+  }
+
+  async function onRazaChange(selectId = 'a-raza') {
+    const sel = document.getElementById(selectId);
+    if (!sel || sel.value !== '__nueva__') return;
+    sel.value = '';
+    openRazaModal(selectId);
+  }
+
+  function calcularEdad(fechaNac) {
+    if (!fechaNac) return '—';
+    const hoy = new Date();
+    const nac = new Date(fechaNac + 'T12:00:00');
+    let anios = hoy.getFullYear() - nac.getFullYear();
+    let meses = hoy.getMonth() - nac.getMonth();
+
+    if (meses < 0) { anios--; meses += 12; }
+    if (hoy.getDate() < nac.getDate()) meses--;
+
+    if (anios > 0) return `${anios} año${anios>1?'s':''} ${meses>0?meses+'m':''}`.trim();
+    if (meses > 0) return `${meses} mes${meses>1?'es':''}`;
+    const dias = Math.floor((hoy - nac) / (1000 * 60 * 60 * 24));
+    return `${dias} día${dias!==1?'s':''}`;
+  }
+
+  const ESTADO_PROD_BADGES = {
+    gestante: 'badge-Gestando',
+    parida: 'badge-Pario',
+    servicio: 'badge-Macho',
+    primala: 'badge-Hembra',
+    cordera: 'badge-Vendido',
+    lactando: 'badge-Activo',
+    destetada: 'badge-Vendido',
+    semental: 'badge-Macho',
+    engorda: 'badge-Muerto'
+  };
+
+function populateAnimalSelects() {
+  const selects = [
+    'a-padre',
+    'a-madre',
+    'r-Hembra',
+    'r-Macho',
+    'ep-Hembra',
+    'ep-Macho',
+    'p-animal',
+    's-animal',
+    'v-animal',
+    'ev-animal'
+  ];
+
+  selects.forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    const valorActual = select.value;
+
+    let textoInicial = 'Seleccionar...';
+
+    if (id === 'a-padre') {
+      textoInicial = 'Ninguno (registrar manualmente)';
+    }
+
+    if (id === 'a-madre') {
+      textoInicial = 'Ninguna (registrar manualmente)';
+    }
+
+    const animalesDisponibles = id === 'v-animal' || id === 'ev-animal'
+      ? animalesCache.filter(animal => animal.estado === 'Activo' || animal.id === valorActual)
+      : animalesCache;
+    select.innerHTML = `
+      <option value="">${textoInicial}</option>
+      ${animalesDisponibles.map(animal => `
+        <option value="${animal.id}">
+          ${animal.identificador}${animal.nombre ? ` - ${animal.nombre}` : ''}
+        </option>
+      `).join('')}
+    `;
+
+    if (valorActual) {
+      select.value = valorActual;
+    }
+  });
+
+  togglePadreManual();
+  toggleMadreManual();
+}
+
+  async function loadAnimales() {
+    loading('table-animales');
+    const { data, error } = await db.from('animales').select('*').order('created_at', { ascending: false });
+    if (error) { showToast('Error cargando animales', 'error'); return; }
+    animalesCache = data || [];
+    renderAnimalesTable(data || []);
+    populateAnimalSelects();
+  }
+
+  function renderAnimalesTable(data) {
+    const cont = document.getElementById('table-animales');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('', 'No hay animales registrados aún');
+      refreshTableView('table-animales');
+      return;
+    }
+
+    const rows = data.map(a => `
+      <tr>
+        <td><strong>${a.identificador}</strong></td>
+        <td>${a.nombre || '—'}</td>
+        <td>${badge(a.sexo, {'Macho':'badge-Macho','Hembra':'badge-Hembra'})}</td>
+        <td>${a.raza || '—'}</td>
+        <td title="${a.fecha_nacimiento || ''}">${calcularEdad(a.fecha_nacimiento)}</td>
+        <td>${badge(a.estado, {'Activo':'badge-Activo','Vendido':'badge-Vendido','Muerto':'badge-Muerto'})}</td>
+        <td>${a.estado_productivo ? badge(a.estado_productivo, ESTADO_PROD_BADGES) : '—'}</td>
+        <td>${a.peso_inicial ? a.peso_inicial + ' kg' : '—'}</td>
+        <td>${a.numero_partos ?? '—'}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-edit" onclick="openEditAnimal('${a.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="deleteRecord('animales','${a.id}')">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Nombre</th><th>Sexo</th><th>Raza</th><th>Edad</th><th>Estado</th><th>Est. Productivo</th><th>Peso</th><th>Partos</th><th>Acc.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    refreshTableView('table-animales');
+  }
+
+  async function saveAnimal() {
+    const payload = {
+      identificador: document.getElementById('a-identificador').value.trim(),
+      nombre: document.getElementById('a-nombre').value.trim() || null,
+      sexo: document.getElementById('a-sexo').value,
+      raza: document.getElementById('a-raza').value || null,
+      fecha_nacimiento: document.getElementById('a-nacimiento').value || null,
+      estado: document.getElementById('a-estado').value,
+      estado_productivo: document.getElementById('a-estado-productivo').value || null,
+      numero_partos: document.getElementById('a-num-partos').value ? parseInt(document.getElementById('a-num-partos').value) : 0,
+      tipo_nacimiento: document.getElementById('a-tipo-nacimiento').value || null,
+      notas: document.getElementById('a-notas').value.trim() || null,
+      id_padre: document.getElementById('a-padre').value || null,
+      id_madre: document.getElementById('a-madre').value || null,
+      nombre_padre: document.getElementById('a-padre-manual').value.trim() || null,
+      nombre_madre: document.getElementById('a-madre-manual').value.trim() || null,
+      peso_inicial: document.getElementById('a-peso-inicial').value ? parseFloat(document.getElementById('a-peso-inicial').value) : null
+    };
+
+    if (!payload.identificador || !payload.sexo) {
+      showToast('Identificador y sexo son obligatorios', 'error');
+      return;
+    }
+
+    const { data, error } = await db.from('animales').insert(payload).select().single();
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      return;
+    }
+
+    if (payload.peso_inicial && data) {
+      const fecha = document.getElementById('a-nacimiento').value || new Date().toISOString().split('T')[0];
+      await db.from('produccion').insert({
+        id_animal: data.id,
+        fecha,
+        peso: payload.peso_inicial,
+        observaciones: 'Peso inicial al registro'
+      });
+    }
+
+    showToast(' Animal registrado exitosamente');
+    closeModal('modal-animal');
+    resetAnimalForm();
+    await refreshAppData();
+  }
+
+  function resetAnimalForm() {
+    ['a-identificador','a-nombre','a-raza','a-nacimiento','a-notas','a-peso-inicial','a-padre-manual','a-madre-manual','a-num-partos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['a-sexo','a-estado','a-estado-productivo','a-tipo-nacimiento','a-padre','a-madre'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    togglePadreManual();
+    toggleMadreManual();
+  }
+
+  function togglePadreManual() {
+    const sel = document.getElementById('a-padre');
+    const manual = document.getElementById('wrap-padre-manual');
+    if (manual) manual.style.display = sel && sel.value === '' ? 'block' : 'none';
+  }
+
+  function toggleMadreManual() {
+    const sel = document.getElementById('a-madre');
+    const manual = document.getElementById('wrap-madre-manual');
+    if (manual) manual.style.display = sel && sel.value === '' ? 'block' : 'none';
+  }
+
+  async function openEditAnimal(id) {
+    const { data: a, error } = await db.from('animales').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando animal', 'error'); return; }
+
+    document.getElementById('ea-id').value = a.id;
+    document.getElementById('ea-identificador').value = a.identificador || '';
+    document.getElementById('ea-nombre').value = a.nombre || '';
+    document.getElementById('ea-sexo').value = a.sexo || '';
+    document.getElementById('ea-nacimiento').value = a.fecha_nacimiento || '';
+    document.getElementById('ea-estado').value = a.estado || 'Activo';
+    document.getElementById('ea-estado-productivo').value = a.estado_productivo || '';
+    document.getElementById('ea-num-partos').value = a.numero_partos ?? '';
+    document.getElementById('ea-tipo-nacimiento').value = a.tipo_nacimiento || '';
+    document.getElementById('ea-notas').value = a.notas || '';
+    document.getElementById('ea-raza').innerHTML = '<option value="">Seleccionar raza...</option>' + RAZAS_BASE.map(r => `<option value="${r}">${r}</option>`).join('') + '<option value="__nueva__"> Agregar nueva raza...</option>';
+    document.getElementById('ea-raza').value = a.raza || '';
+
+    openModal('modal-edit-animal');
+  }
+
+  async function updateAnimal() {
+    const id = document.getElementById('ea-id').value;
+    const payload = {
+      identificador: document.getElementById('ea-identificador').value.trim(),
+      nombre: document.getElementById('ea-nombre').value.trim() || null,
+      sexo: document.getElementById('ea-sexo').value,
+      raza: document.getElementById('ea-raza').value || null,
+      fecha_nacimiento: document.getElementById('ea-nacimiento').value || null,
+      estado: document.getElementById('ea-estado').value,
+      estado_productivo: document.getElementById('ea-estado-productivo').value || null,
+      numero_partos: document.getElementById('ea-num-partos').value ? parseInt(document.getElementById('ea-num-partos').value) : 0,
+      tipo_nacimiento: document.getElementById('ea-tipo-nacimiento').value || null,
+      notas: document.getElementById('ea-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('animales').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(' Animal actualizado');
+    closeModal('modal-edit-animal');
+    await refreshAppData();
+  }
+
+  // ============ REPRODUCCION ============
+  async function loadReproduccion() {
+    loading('table-reproduccion');
+    const { data, error } = await db.from('reproduccion').select(`*, Hembra:id_Hembra(identificador,nombre), Macho:id_Macho(identificador,nombre)`).order('created_at', { ascending: false });
+    if (error) { showToast('Error cargando reproducción', 'error'); return; }
+    const cont = document.getElementById('table-reproduccion');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('', 'No hay registros de reproducción');
+      refreshTableView('table-reproduccion');
+      return;
+    }
+
+const rows = data.map(r => `
+  <tr>
+    <td>${r.Hembra ? r.Hembra.identificador : '—'}</td>
+    <td>${r.Macho ? r.Macho.identificador : '—'}</td>
+    <td>${formatDate(r.fecha_empadre)}</td>
+    <td>${formatDate(r.fecha_parto_estimada)}</td>
+    <td>${formatDate(r.fecha_parto_real)}</td>
+    <td>${r.numero_crias ?? '—'}</td>
+    <td>${badge(r.estado, {
+      Gestando: 'badge-Gestando',
+      Pario: 'badge-Pario',
+      Fallido: 'badge-Fallido'
+    })}</td>
+    <td>${r.notas || r.observaciones || '—'}</td>
+    <td>
+      <div class="table-actions">
+        <button
+          class="btn btn-edit"
+          onclick="openEditParto('${r.id}')">
+          Editar
+        </button>
+
+        <button
+          class="btn btn-danger"
+          onclick="deleteRecord('reproduccion','${r.id}')">
+          Eliminar
+        </button>
+      </div>
+    </td>
+  </tr>
+`).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Hembra</th><th>Macho</th><th>Empadre</th><th>Parto Est.</th><th>Parto Real</th><th>Crías</th><th>Estado</th><th>Notas</th><th>Acc.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    refreshTableView('table-reproduccion');
+  }
+
+  async function saveReproduccion() {
+    const payload = {
+      id_Hembra: document.getElementById('r-Hembra').value,
+      id_Macho: document.getElementById('r-Macho').value,
+      fecha_empadre: document.getElementById('r-empadre').value,
+      fecha_parto_real: document.getElementById('r-parto-real').value || null,
+      numero_crias: document.getElementById('r-crias').value ? parseInt(document.getElementById('r-crias').value) : null,
+      estado: document.getElementById('r-estado').value,
+      observaciones: document.getElementById('r-observaciones').value || null,
+      notas: document.getElementById('r-notas-repro').value.trim() || null
+    };
+
+    if (!payload.id_Hembra || !payload.id_Macho || !payload.fecha_empadre) {
+      showToast('Hembra, Macho y fecha son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('reproduccion').insert(payload);
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      return;
+    }
+
+    showToast(' Empadre registrado');
+    closeModal('modal-reproduccion');
+    await refreshAppData();
+  }
+
+async function openEditParto(id) {
+  const { data: parto, error } = await db
+    .from('reproduccion')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !parto) {
+    console.error('Error cargando empadre:', error);
+    showToast('Error cargando el empadre', 'error');
+    return;
+  }
+
+  // Asegurar que los selectores tengan cargados los animales
+  if (!animalesCache || animalesCache.length === 0) {
+    await loadAnimales();
+  } else {
+    populateAnimalSelects();
+  }
+
+  document.getElementById('ep-id').value = parto.id || '';
+  document.getElementById('ep-Hembra').value = parto.id_Hembra || '';
+  document.getElementById('ep-Macho').value = parto.id_Macho || '';
+  document.getElementById('ep-empadre').value = parto.fecha_empadre || '';
+  document.getElementById('ep-parto-real').value = parto.fecha_parto_real || '';
+  document.getElementById('ep-crias').value = parto.numero_crias ?? '';
+  document.getElementById('ep-estado').value = parto.estado || 'Gestando';
+document.getElementById('ep-observaciones').value =
+  parto.observaciones || parto.notas || '';
+
+  openModal('modal-editar-parto');
+}
+async function updateParto() {
+  const id = document.getElementById('ep-id').value;
+
+  const payload = {
+    id_Hembra: document.getElementById('ep-Hembra').value,
+    id_Macho: document.getElementById('ep-Macho').value,
+    fecha_empadre: document.getElementById('ep-empadre').value,
+    fecha_parto_real: document.getElementById('ep-parto-real').value || null,
+    numero_crias: document.getElementById('ep-crias').value !== ''
+      ? parseInt(document.getElementById('ep-crias').value, 10)
+      : null,
+    estado: document.getElementById('ep-estado').value,
+    observaciones: document.getElementById('ep-observaciones').value.trim() || null
+  };
+
+  if (!id) {
+    showToast('No se encontró el registro del empadre', 'error');
+    return;
+  }
+
+  if (!payload.id_Hembra || !payload.id_Macho || !payload.fecha_empadre) {
+    showToast(
+      'Hembra, Macho y fecha de empadre son obligatorios',
+      'error'
+    );
+    return;
+  }
+
+  const { error } = await db
+    .from('reproduccion')
+    .update(payload)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error actualizando empadre:', error);
+    showToast('Error: ' + error.message, 'error');
+    return;
+  }
+
+  showToast(' Empadre actualizado');
+  closeModal('modal-editar-parto');
+
+  await refreshAppData();
+}
+
+  // ============ PRODUCCION ============
+  async function loadProduccion() {
+    loading('table-produccion');
+    const { data, error } = await db.from('produccion').select(`*, animal:id_animal(identificador,nombre)`).order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando producción', 'error'); return; }
+
+    const cont = document.getElementById('table-produccion');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('', 'No hay registros de peso');
+      refreshTableView('table-produccion');
+      return;
+    }
+
+    const rows = data.map(p => `
+      <tr>
+        <td>${p.animal ? p.animal.identificador : '—'}</td>
+        <td>${p.animal ? (p.animal.nombre || '—') : '—'}</td>
+        <td>${formatDate(p.fecha)}</td>
+        <td><strong>${p.peso != null ? p.peso + ' kg' : '—'}</strong></td>
+        <td>${p.observaciones || '—'}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-edit" onclick="openEditProduccion('${p.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="deleteRecord('produccion','${p.id}')">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>ID Animal</th><th>Nombre</th><th>Fecha</th><th>Peso</th><th>Observaciones</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    refreshTableView('table-produccion');
+  }
+
+  async function saveProduccion() {
+    const payload = {
+      id_animal: document.getElementById('p-animal').value,
+      fecha: document.getElementById('p-fecha').value,
+      peso: document.getElementById('p-peso').value ? parseFloat(document.getElementById('p-peso').value) : null,
+      observaciones: document.getElementById('p-observaciones').value || null
+    };
+
+    if (!payload.id_animal || !payload.fecha) {
+      showToast('Animal y fecha son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('produccion').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(' Peso registrado');
+    closeModal('modal-produccion');
+    await refreshAppData();
+  }
+
+  async function openEditProduccion(id) {
+    const { data: p, error } = await db.from('produccion')
+      .select('*, animal:id_animal(identificador,nombre)')
+      .eq('id', id)
+      .single();
+    if (error) { showToast('Error cargando producción', 'error'); return; }
+    if (!p) {
+      showToast('No se encontró el registro de peso que quieres editar.', 'error');
+      return;
+    }
+
+    const animalSelect = document.getElementById('ep2-animal');
+    animalSelect.replaceChildren(new Option('Seleccionar animal...', ''));
+    animalesCache.forEach(animal => {
+      const label = `${animal.identificador}${animal.nombre ? ` - ${animal.nombre}` : ''}`;
+      animalSelect.add(new Option(label, animal.id));
+    });
+    if (p.id_animal && !Array.from(animalSelect.options).some(option => option.value === p.id_animal)) {
+      const currentAnimal = p.animal;
+      const label = currentAnimal
+        ? `${currentAnimal.identificador}${currentAnimal.nombre ? ` - ${currentAnimal.nombre}` : ''}`
+        : 'Animal actual';
+      animalSelect.add(new Option(label, p.id_animal));
+    }
+
+    document.getElementById('ep2-id').value = p.id;
+    animalSelect.value = p.id_animal || '';
+    document.getElementById('ep2-fecha').value = p.fecha || '';
+    document.getElementById('ep2-peso').value = p.peso ?? '';
+    document.getElementById('ep2-obs').value = p.observaciones || '';
+    openModal('modal-edit-produccion');
+  }
+
+  async function updateProduccion() {
+    const id = document.getElementById('ep2-id').value;
+    const animalId = document.getElementById('ep2-animal').value;
+    const fecha = document.getElementById('ep2-fecha').value;
+    const rawWeight = document.getElementById('ep2-peso').value;
+    const peso = rawWeight === '' ? null : Number(rawWeight);
+    if (!id || !animalId || !fecha || peso === null || !Number.isFinite(peso) || peso <= 0) {
+      showToast('Selecciona un animal, indica la fecha y captura un peso mayor que cero.', 'error');
+      return;
+    }
+
+    const payload = {
+      id_animal: animalId,
+      fecha,
+      peso,
+      observaciones: document.getElementById('ep2-obs').value.trim() || null
+    };
+
+    const button = document.getElementById('ep2-save');
+    button.disabled = true;
+    button.textContent = 'Guardando...';
+    try {
+      const { data, error } = await db.from('produccion')
+        .update(payload)
+        .eq('id', id)
+        .select('id')
+        .maybeSingle();
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('Ya existe un pesaje para este animal en esa fecha. Elige otra fecha.');
+        }
+        throw new Error(error.message);
+      }
+      if (!data) throw new Error('No se encontró el registro de peso que quieres actualizar.');
+
+      showToast('Registro de producción actualizado.');
+      closeModal('modal-edit-produccion');
+      await refreshAppData();
+    } catch (error) {
+      showToast('No se pudo actualizar el registro: ' + getErrorMessage(error), 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Guardar Cambios';
+    }
+  }
+</script>
+<script>
+  // ============ SALUD ============
+  async function loadSalud() {
+    loading('table-salud');
+    const { data, error } = await db.from('salud').select(`*, animal:id_animal(identificador,nombre)`).order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando salud', 'error'); return; }
+    const cont = document.getElementById('table-salud');
+    if (!cont) return;
+
+    if (!data || !data.length) {
+      cont.innerHTML = emptyState('', 'No hay eventos de salud');
+      refreshTableView('table-salud');
+      return;
+    }
+
+    const tipoMap = { enfermedad:'badge-Muerto', Vacuna:'badge-Activo', Tratamiento:'badge-Gestando', Desparasitacion:'badge-Vendido' };
+
+    const rows = data.map(s => `
+      <tr>
+        <td>${s.animal ? s.animal.identificador : '—'}</td>
+        <td>${formatDate(s.fecha)}</td>
+        <td>${badge(s.tipo, tipoMap)}</td>
+        <td>${s.diagnostico || '—'}</td>
+        <td>${s.medicamento || '—'}</td>
+        <td>${s.dosis || '—'}</td>
+        <td>${s.notas || '—'}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-edit" onclick="openEditSalud('${s.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="deleteRecord('salud','${s.id}')">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>Animal</th><th>Fecha</th><th>Tipo</th><th>Diagnóstico</th><th>Medicamento</th><th>Dosis</th><th>Notas</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    refreshTableView('table-salud');
+  }
+
+  async function saveSalud() {
+    const payload = {
+      id_animal: document.getElementById('s-animal').value,
+      fecha: document.getElementById('s-fecha').value,
+      tipo: document.getElementById('s-tipo').value,
+      medicamento: document.getElementById('s-medicamento').value || null,
+      dosis: document.getElementById('s-dosis').value || null,
+      diagnostico: document.getElementById('s-diagnostico').value || null,
+      Tratamiento: document.getElementById('s-Tratamiento').value || null,
+      observaciones: document.getElementById('s-observaciones').value || null,
+      notas: document.getElementById('s-notas').value.trim() || null
+    };
+
+    if (!payload.id_animal || !payload.fecha || !payload.tipo) {
+      showToast('Animal, fecha y tipo son obligatorios', 'error');
+      return;
+    }
+
+    const { error } = await db.from('salud').insert(payload);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(' Evento de salud registrado');
+    closeModal('modal-salud');
+    await refreshAppData();
+  }
+
+  async function openEditSalud(id) {
+    const { data: s, error } = await db.from('salud').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando salud', 'error'); return; }
+
+    document.getElementById('es-id').value = s.id;
+    document.getElementById('es-fecha').value = s.fecha || '';
+    document.getElementById('es-tipo').value = s.tipo || '';
+    document.getElementById('es-medicamento').value = s.medicamento || '';
+    document.getElementById('es-dosis').value = s.dosis || '';
+    document.getElementById('es-diagnostico').value = s.diagnostico || '';
+    document.getElementById('es-Tratamiento').value = s.Tratamiento || '';
+    document.getElementById('es-observaciones').value = s.observaciones || '';
+    document.getElementById('es-notas').value = s.notas || '';
+
+    openModal('modal-edit-salud');
+  }
+
+  async function updateSalud() {
+    const id = document.getElementById('es-id').value;
+    const payload = {
+      fecha: document.getElementById('es-fecha').value,
+      tipo: document.getElementById('es-tipo').value,
+      medicamento: document.getElementById('es-medicamento').value || null,
+      dosis: document.getElementById('es-dosis').value || null,
+      diagnostico: document.getElementById('es-diagnostico').value || null,
+      Tratamiento: document.getElementById('es-Tratamiento').value || null,
+      observaciones: document.getElementById('es-observaciones').value || null,
+      notas: document.getElementById('es-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('salud').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(' Evento actualizado');
+    closeModal('modal-edit-salud');
+    await refreshAppData();
+  }
+
+  // ============ VENTAS ============
+  function renderClientesSelect() {
+    const el = document.getElementById('v-cliente');
+    if (!el) return;
+
+    const current = el.value || '';
+    const clientes = [...new Set([
+      ...clientesCache,
+      ...((ventasCache || []).map(v => (v.cliente || '').trim()).filter(Boolean))
+    ])].filter(Boolean).sort((a, b) => a.localeCompare(b));
+
+    el.innerHTML = '<option value="">Seleccionar cliente...</option>' +
+      clientes.map(c => `<option value="${c}">${c}</option>`).join('') +
+      '<option value="__nuevo__">Agregar nuevo cliente...</option>';
+
+    if (current && clientes.includes(current)) {
+      el.value = current;
+    } else {
+      el.value = '';
+    }
+  }
+
+  function openClienteModal(targetSelectId = 'v-cliente') {
+    const modal = document.getElementById('modal-cliente');
+    const input = document.getElementById('cliente-nombre');
+    if (!modal || !input) return;
+
+    modal.dataset.targetSelect = targetSelectId || 'v-cliente';
+    input.value = '';
+    input.focus();
+    openModal('modal-cliente');
+  }
+
+  function onClienteChange(selectId = 'v-cliente') {
+    const sel = document.getElementById(selectId);
+    if (!sel || sel.value !== '__nuevo__') return;
+    sel.value = '';
+    openClienteModal(selectId);
+  }
+
+  function guardarNuevoCliente() {
+    const modal = document.getElementById('modal-cliente');
+    const input = document.getElementById('cliente-nombre');
+    const nombre = input?.value.trim();
+
+    if (!nombre) {
+      if (input) input.focus();
+      return;
+    }
+
+    if (!clientesCache.includes(nombre)) clientesCache.push(nombre);
+    renderClientesSelect();
+
+    const targetSelectId = modal?.dataset.targetSelect || 'v-cliente';
+    const targetSelect = document.getElementById(targetSelectId);
+    if (targetSelect) targetSelect.value = nombre;
+
+    closeModal('modal-cliente');
+    showToast(' Cliente agregado');
+  }
+
+  function populateVentaAnimalSelect() {
+    const el = document.getElementById('v-animal');
+    if (!el) return;
+
+    const current = el.value;
+    const disponibles = animalesCache.filter(animal =>
+      animal.estado === 'Activo' || animal.id === current
+    );
+    el.innerHTML = '<option value="">Seleccionar animal...</option>' +
+      disponibles.map(animal =>
+        `<option value="${animal.id}">${animal.identificador}${animal.nombre ? ` - ${animal.nombre}` : ''}</option>`
+      ).join('');
+    el.value = current;
+  }
+
+  async function loadVentas() {
+    loading('table-ventas');
+    const { data, error } = await db.from('ventas').select('*').order('fecha', { ascending: false });
+    if (error) { showToast('Error cargando ventas', 'error'); return; }
+    ventasCache = data || [];
+    clientesCache = [...new Set((ventasCache || []).map(v => (v.cliente || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    renderClientesSelect();
+    populateVentaAnimalSelect();
+    renderVentasTable();
+  }
+
+  function renderVentasTable() {
+    const cont = document.getElementById('table-ventas');
+    if (!cont) return;
+    if (!ventasCache.length) {
+      cont.innerHTML = emptyState('', 'No hay ventas registradas');
+      refreshTableView('table-ventas');
+      return;
+    }
+
+    const animalsBySale = new Map();
+    detalleVentasCache.forEach(detalle => {
+      const label = detalle.animal
+        ? `${detalle.animal.identificador}${detalle.animal.nombre ? ` - ${detalle.animal.nombre}` : ''}`
+        : '';
+      if (!label) return;
+      const linkedAnimals = animalsBySale.get(detalle.id_venta) || [];
+      if (!linkedAnimals.includes(label)) linkedAnimals.push(label);
+      animalsBySale.set(detalle.id_venta, linkedAnimals);
+    });
+
+    const rows = ventasCache.map(v => {
+      const animalLabels = animalsBySale.get(v.id) || [];
+      return `
+        <tr>
+          <td>${formatDate(v.fecha)}</td>
+          <td>${v.cliente || '—'}</td>
+          <td>${v.tipo_venta === 'pie_cria' ? 'Pie de Cría' : 'Carne'}</td>
+          <td>${animalLabels.join(', ') || '—'}</td>
+          <td><strong>${formatMoney(v.total)}</strong></td>
+          <td>${formatMoney(v.costo)}</td>
+          <td>${v.notas || '—'}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-edit" onclick="openEditVenta('${v.id}')">Editar</button>
+              <button class="btn btn-danger" onclick="deleteRecord('ventas','${v.id}')">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    cont.innerHTML = `
+      <table>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Animal / origen de carne</th><th>Total</th><th>Costo</th><th>Notas</th><th>Acc.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    refreshTableView('table-ventas');
+  }
+
+  async function saveVenta() {
+    const payload = {
+      fecha: document.getElementById('v-fecha').value || null,
+      cliente: document.getElementById('v-cliente').value || null,
+      id_animal: document.getElementById('v-animal').value || null,
+      tipo_venta: document.getElementById('v-tipo').value || 'carne',
+      total: document.getElementById('v-total').value ? parseFloat(document.getElementById('v-total').value) : null,
+      costo: document.getElementById('v-costo').value ? parseFloat(document.getElementById('v-costo').value) : null,
+      notas: document.getElementById('v-notas').value.trim() || null
+    };
+
+    if (!payload.fecha) { showToast('La fecha es obligatoria', 'error'); return; }
+    if (!payload.cliente) { showToast('El cliente es obligatorio', 'error'); return; }
+    if (!payload.id_animal) { showToast('Selecciona el animal Vendido o de origen', 'error'); return; }
+
+    const { id_animal, ...ventaPayload } = payload;
+    const { data: venta, error: ventaError } = await db.from('ventas')
+      .insert(ventaPayload)
+      .select('id')
+      .single();
+    if (ventaError || !venta) {
+      showToast('Error al registrar la venta: ' + (ventaError?.message || 'No se recibió el identificador de la venta'), 'error');
+      return;
+    }
+
+    const { error: detalleError } = await db.from('detalle_venta').insert({
+      id_venta: venta.id,
+      id_animal
+    });
+    if (detalleError) {
+      const { error: rollbackError } = await db.from('ventas').delete().eq('id', venta.id);
+      const rollbackMessage = rollbackError
+        ? ` No se pudo revertir la venta ${venta.id}: ${rollbackError.message}.`
+        : '';
+      showToast(`Error vinculando el animal: ${detalleError.message}.${rollbackMessage}`, 'error');
+      return;
+    }
+
+    const { error: animalError } = await db.from('animales')
+      .update({ estado: 'Vendido' })
+      .eq('id', id_animal);
+    if (animalError) {
+      showToast(`La venta se registró, pero no se pudo actualizar el estado del animal: ${animalError.message}`, 'error');
+      closeModal('modal-venta');
+      await refreshAppData();
+      return;
+    }
+
+    if (!clientesCache.includes(payload.cliente)) clientesCache.push(payload.cliente);
+
+    showToast(' Venta registrada');
+    closeModal('modal-venta');
+    await refreshAppData();
+  }
+
+  async function openEditVenta(id) {
+    const { data: v, error } = await db.from('ventas').select('*').eq('id', id).single();
+    if (error) { showToast('Error cargando venta', 'error'); return; }
+
+    const { data: detalles, error: detalleError } = await db.from('detalle_venta')
+      .select('id,id_animal')
+      .eq('id_venta', id);
+    if (detalleError) { showToast('Error cargando el animal de la venta: ' + detalleError.message, 'error'); return; }
+
+    const animalSelect = document.getElementById('ev-animal');
+    const animalInfo = document.getElementById('ev-animal-info');
+    const detalleIdInput = document.getElementById('ev-detalle-id');
+    const originalAnimalInput = document.getElementById('ev-animal-original');
+    const detallesVenta = detalles || [];
+    const animalOriginal = detallesVenta.length === 1 ? detallesVenta[0].id_animal : '';
+
+    document.getElementById('ev-id').value = v.id;
+    document.getElementById('ev-fecha').value = v.fecha || '';
+    document.getElementById('ev-cliente').value = v.cliente || '';
+    document.getElementById('ev-tipo').value = v.tipo_venta || 'carne';
+    document.getElementById('ev-total').value = v.total ?? '';
+    document.getElementById('ev-costo').value = v.costo ?? '';
+    populateAnimalSelects();
+    if (animalOriginal && animalSelect && !Array.from(animalSelect.options).some(option => option.value === animalOriginal)) {
+      const animal = animalesCache.find(item => item.id === animalOriginal);
+      if (animal) {
+        const label = `${animal.identificador}${animal.nombre ? ` - ${animal.nombre}` : ''}`;
+        animalSelect.add(new Option(label, animal.id));
+      }
+    }
+    document.getElementById('ev-animal').value = animalOriginal;
+    document.getElementById('ev-notas').value = v.notas || '';
+    if (detalleIdInput) detalleIdInput.value = detallesVenta.length === 1 ? detallesVenta[0].id : '';
+    if (originalAnimalInput) originalAnimalInput.value = animalOriginal;
+    if (animalSelect) animalSelect.disabled = detallesVenta.length > 1;
+    if (animalInfo) {
+      animalInfo.textContent = detallesVenta.length > 1
+        ? 'Esta venta tiene varios animales vinculados; se conservarán sin cambios.'
+        : '';
+      animalInfo.style.display = detallesVenta.length > 1 ? 'block' : 'none';
+    }
+    openModal('modal-edit-venta');
+  }
+
+  async function updateVenta() {
+    const id = document.getElementById('ev-id').value;
+    const detalleId = document.getElementById('ev-detalle-id').value;
+    const originalAnimalId = document.getElementById('ev-animal-original').value;
+    const selectedAnimalId = document.getElementById('ev-animal').value || null;
+    const canEditAnimal = !document.getElementById('ev-animal').disabled;
+    if (canEditAnimal && originalAnimalId && !selectedAnimalId) {
+      showToast('Selecciona el animal que corresponde a esta venta', 'error');
+      return;
+    }
+    const payload = {
+      fecha: document.getElementById('ev-fecha').value || null,
+      cliente: document.getElementById('ev-cliente').value || null,
+      tipo_venta: document.getElementById('ev-tipo').value || 'carne',
+      total: document.getElementById('ev-total').value ? parseFloat(document.getElementById('ev-total').value) : null,
+      costo: document.getElementById('ev-costo').value ? parseFloat(document.getElementById('ev-costo').value) : null,
+      notas: document.getElementById('ev-notas').value.trim() || null
+    };
+
+    const { error } = await db.from('ventas').update(payload).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    if (canEditAnimal && selectedAnimalId && selectedAnimalId !== originalAnimalId) {
+      if (detalleId) {
+        const { error: relationError } = await db.from('detalle_venta')
+          .update({ id_animal: selectedAnimalId })
+          .eq('id', detalleId);
+        if (relationError) {
+          showToast('La venta se actualizó, pero no se pudo cambiar el animal: ' + relationError.message, 'error');
+          await refreshAppData();
+          return;
+        }
+      } else {
+        const { error: relationError } = await db.from('detalle_venta').insert({
+          id_venta: id,
+          id_animal: selectedAnimalId
+        });
+        if (relationError) {
+          showToast('La venta se actualizó, pero no se pudo asociar el animal: ' + relationError.message, 'error');
+          await refreshAppData();
+          return;
+        }
+      }
+
+      const { error: newAnimalError } = await db.from('animales')
+        .update({ estado: 'Vendido' })
+        .eq('id', selectedAnimalId);
+      if (newAnimalError) {
+        showToast('El animal quedó vinculado, pero no se pudo actualizar su estado: ' + newAnimalError.message, 'error');
+        await refreshAppData();
+        return;
+      }
+
+      if (originalAnimalId) {
+        const { data: remainingDetails, error: countError } = await db.from('detalle_venta')
+          .select('id')
+          .eq('id_animal', originalAnimalId);
+        if (countError) {
+          showToast('Se cambió el animal de la venta, pero no se pudo verificar si el anterior sigue en otra venta: ' + countError.message, 'error');
+          await refreshAppData();
+          return;
+        }
+        if (!remainingDetails?.length) {
+          const { error: restoreError } = await db.from('animales')
+            .update({ estado: 'Activo' })
+            .eq('id', originalAnimalId);
+          if (restoreError) {
+            showToast('Se cambió el animal de la venta, pero no se pudo restaurar el estado del anterior: ' + restoreError.message, 'error');
+            await refreshAppData();
+            return;
+          }
+        }
+      }
+    }
+
+    showToast(' Venta actualizada');
+    closeModal('modal-edit-venta');
+    await refreshAppData();
+  }
+
+  async function loadDetalleVenta() {
+    const { data, error } = await db.from('detalle_venta')
+      .select('id, id_venta, id_animal')
+      .order('id', { ascending: false });
+    if (error) {
+      showToast('Error cargando detalle de ventas: ' + error.message, 'error');
+      return;
+    }
+    detalleVentasCache = (data || []).map(detalle => ({
+      ...detalle,
+      animal: animalesCache.find(animal => animal.id === detalle.id_animal) || null
+    }));
+    renderVentasTable();
+  }
+
+  // ============ DASHBOARD ============
+  let dashboardSnapshot = null;
+  let dashboardCurrentRange = null;
+
+  async function loadDashboard() {
+    const [animalsResult, reproResult, saludResult, ventasResult, produccionResult] = await Promise.all([
+      db.from('animales').select('id,identificador,nombre,sexo,estado,estado_productivo'),
+      db.from('reproduccion')
+        .select('fecha_parto_estimada, estado, Hembra:id_Hembra(identificador,nombre)')
+        .order('fecha_parto_estimada'),
+      db.from('salud')
+        .select('id,fecha,tipo,diagnostico,medicamento,animal:id_animal(identificador,nombre)')
+        .order('fecha', { ascending: false }),
+      db.from('ventas').select('fecha,total,cliente').order('fecha'),
+      db.from('produccion')
+        .select('id_animal,fecha,peso,animal:id_animal(identificador,nombre)')
+        .order('fecha')
+    ]);
+    const queryError = [animalsResult, reproResult, saludResult, ventasResult, produccionResult]
+      .find(result => result.error)?.error;
+    if (queryError) {
+      ['stat-total', 'stat-Machos', 'stat-Hembras', 'stat-Gestando', 'stat-partos-proximos', 'stat-eventos-salud', 'stat-ventas-total', 'stat-pesos-mes']
+        .forEach(id => { document.getElementById(id).textContent = '—'; });
+      renderDashboardList('dashboard-births-list', [], 'No se pudo cargar la información.');
+      renderDashboardList('dashboard-health-list', [], 'No se pudo cargar la información.');
+      renderDashboardList('dashboard-sales-list', [], 'No se pudo cargar la información.');
+      renderDashboardList('dashboard-weights-list', [], 'No se pudo cargar la información.');
+      showToast('Error cargando el resumen: ' + queryError.message, 'error');
+      return;
+    }
+
+    dashboardSnapshot = {
+      animals: animalsResult.data || [],
+      repro: reproResult.data || [],
+      salud: saludResult.data || [],
+      ventas: ventasResult.data || [],
+      produccion: produccionResult.data || []
+    };
+    applyDashboardPeriod();
+  }
+
+  function dashboardTodayKey() {
+    const today = new Date();
+    return [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
+  function getDashboardDateRange(period, todayKey, prefix = 'dashboard') {
+    const today = new Date(`${todayKey}T00:00:00`);
+    if (period === 'all') return { start: null, end: null, label: 'Todo el historial' };
+    if (period === 'custom') {
+      const start = document.getElementById(`${prefix}-date-from`).value;
+      const end = document.getElementById(`${prefix}-date-to`).value;
+      if (!start || !end) return { error: 'Selecciona ambas fechas para aplicar el periodo.' };
+      if (start > end) return { error: 'La fecha inicial no puede ser posterior a la fecha final.' };
+      return { start, end, label: `${formatDate(start)} – ${formatDate(end)}` };
+    }
+    if (period === '90days') {
+      today.setDate(today.getDate() - 89);
+      return { start: dashboardDateKey(today), end: todayKey, label: 'Últimos 90 días' };
+    }
+    if (period === 'year') {
+      return { start: `${todayKey.slice(0, 4)}-01-01`, end: todayKey, label: 'Este año' };
+    }
+    return { start: `${todayKey.slice(0, 7)}-01`, end: todayKey, label: 'Este mes' };
+  }
+
+  function dashboardDateKey(date) {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
+  function syncDashboardFilters(sourcePrefix) {
+    const otherPrefix = sourcePrefix === 'dashboard' ? 'chart-dashboard' : 'dashboard';
+    const sourcePeriod = document.getElementById(`${sourcePrefix}-period`);
+    const otherPeriod = document.getElementById(`${otherPrefix}-period`);
+    otherPeriod.value = sourcePeriod.value;
+    ['date-from', 'date-to'].forEach(suffix => {
+      document.getElementById(`${otherPrefix}-${suffix}`).value =
+        document.getElementById(`${sourcePrefix}-${suffix}`).value;
+    });
+    [sourcePrefix, otherPrefix].forEach(prefix => {
+      document.getElementById(`${prefix}-custom-range`).hidden = sourcePeriod.value !== 'custom';
+      const error = document.getElementById(`${prefix}-range-error`);
+      error.textContent = '';
+      error.classList.remove('visible');
+    });
+  }
+
+  function handleDashboardPeriodChange(sourcePrefix = 'dashboard') {
+    syncDashboardFilters(sourcePrefix);
+    if (document.getElementById(`${sourcePrefix}-period`).value !== 'custom') {
+      applyDashboardPeriod(sourcePrefix);
+    }
+  }
+
+  function applyDashboardPeriod(sourcePrefix = 'dashboard') {
+    if (!dashboardSnapshot) return;
+    syncDashboardFilters(sourcePrefix);
+    const period = document.getElementById(`${sourcePrefix}-period`).value;
+    const range = getDashboardDateRange(period, dashboardTodayKey(), sourcePrefix);
+    const errorElement = document.getElementById(`${sourcePrefix}-range-error`);
+    if (range.error) {
+      errorElement.textContent = range.error;
+      errorElement.classList.add('visible');
+      return;
+    }
+    errorElement.textContent = '';
+    errorElement.classList.remove('visible');
+    dashboardCurrentRange = range;
+    renderDashboard(dashboardSnapshot, range);
+  }
+
+  function filterDashboardPeriod(records, range) {
+    return records.filter(record => {
+      if (!record.fecha) return !range.start && !range.end;
+      return (!range.start || record.fecha >= range.start) &&
+        (!range.end || record.fecha <= range.end);
+    });
+  }
+
+  function getPreviousDashboardRange(range, period, todayKey) {
+    if (!range.start || !range.end) return null;
+    const today = new Date(`${todayKey}T00:00:00`);
+    if (period === 'month') {
+      const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const previousMonthEnd = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
+      previousMonthEnd.setDate(Math.min(today.getDate(), previousMonthEnd.getDate()));
+      return {
+        start: dashboardDateKey(previousMonth),
+        end: dashboardDateKey(previousMonthEnd),
+        label: `${formatDate(dashboardDateKey(previousMonth))} – ${formatDate(dashboardDateKey(previousMonthEnd))}`
+      };
+    }
+    if (period === 'year') {
+      const previousYearStart = `${Number(todayKey.slice(0, 4)) - 1}-01-01`;
+      const previousYear = today.getFullYear() - 1;
+      const previousYearEndDate = new Date(
+        previousYear,
+        today.getMonth(),
+        Math.min(today.getDate(), new Date(previousYear, today.getMonth() + 1, 0).getDate())
+      );
+      const previousYearEnd = dashboardDateKey(previousYearEndDate);
+      return {
+        start: previousYearStart,
+        end: previousYearEnd,
+        label: `${formatDate(previousYearStart)} – ${formatDate(previousYearEnd)}`
+      };
+    }
+    const start = new Date(`${range.start}T00:00:00`);
+    const end = new Date(`${range.end}T00:00:00`);
+    const duration = Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const previousEnd = new Date(start);
+    previousEnd.setDate(previousEnd.getDate() - 1);
+    const previousStart = new Date(previousEnd);
+    previousStart.setDate(previousStart.getDate() - duration + 1);
+    return {
+      start: dashboardDateKey(previousStart),
+      end: dashboardDateKey(previousEnd),
+      label: `${formatDate(dashboardDateKey(previousStart))} – ${formatDate(dashboardDateKey(previousEnd))}`
+    };
+  }
+
+  function describeDashboardChange(currentValue, previousValue, formatter = value => value) {
+    const difference = currentValue - previousValue;
+    if (previousValue === 0) {
+      return currentValue === 0
+        ? 'Sin registros en ambos periodos'
+        : `Sin base para comparar; valor actual: ${formatter(currentValue)}`;
+    }
+    const percentage = Math.round((difference / previousValue) * 100);
+    return difference === 0
+      ? `Sin cambio respecto al periodo anterior (${formatter(previousValue)})`
+      : `${difference > 0 ? 'Aumentó' : 'Disminuyó'} ${formatter(Math.abs(difference))} (${Math.abs(percentage)}%) respecto al periodo anterior (${formatter(previousValue)})`;
+  }
+
+  function renderDashboardComparisons(current, previous, previousRange) {
+    const container = document.getElementById('dashboard-comparisons');
+    if (!container) return;
+    container.replaceChildren();
+    const summaries = [
+      { label: 'Ventas', value: formatMoney(current.sales), comparison: previousRange ? describeDashboardChange(current.sales, previous.sales, formatMoney) : 'No hay un periodo anterior comparable.' },
+      { label: 'Eventos de salud', value: String(current.health), comparison: previousRange ? describeDashboardChange(current.health, previous.health) : 'No hay un periodo anterior comparable.' },
+      { label: 'Pesajes', value: String(current.weights), comparison: previousRange ? describeDashboardChange(current.weights, previous.weights) : 'No hay un periodo anterior comparable.' }
+    ];
+    summaries.forEach(summary => {
+      const card = document.createElement('article');
+      card.className = 'dashboard-comparison';
+      const label = document.createElement('span');
+      label.textContent = summary.label;
+      const value = document.createElement('strong');
+      value.textContent = summary.value;
+      const comparison = document.createElement('small');
+      comparison.textContent = summary.comparison;
+      card.append(label, value, comparison);
+      container.append(card);
+    });
+    if (previousRange) {
+      const note = document.createElement('p');
+      note.className = 'dashboard-comparison-note';
+      note.textContent = `Periodo comparado: ${previousRange.label}`;
+      container.append(note);
+    }
+  }
+
+  function renderDashboard(snapshot, range) {
+    const { animals, repro, salud, ventas, produccion } = snapshot;
+    const today = new Date();
+    const todayKey = dashboardDateKey(today);
+    const Activos = animals.filter(animal => animal.estado === 'Activo');
+    const saludPeriodo = filterDashboardPeriod(salud, range);
+    const ventasPeriodo = filterDashboardPeriod(ventas, range);
+    const produccionPeriodo = filterDashboardPeriod(produccion, range);
+    const period = document.getElementById('dashboard-period').value;
+    const previousRange = getPreviousDashboardRange(range, period, todayKey);
+    const saludAnterior = previousRange ? filterDashboardPeriod(salud, previousRange) : [];
+    const ventasAnterior = previousRange ? filterDashboardPeriod(ventas, previousRange) : [];
+    const produccionAnterior = previousRange ? filterDashboardPeriod(produccion, previousRange) : [];
+    const partosProximos = repro.filter(record => {
+      if (record.estado !== 'Gestando') return false;
+      const days = daysUntilDashboardDate(record.fecha_parto_estimada, todayKey);
+      return days !== null && days >= 0 && days <= 30;
+    });
+    const totalVentasPeriodo = ventasPeriodo.reduce((total, record) => total + (Number(record.total) || 0), 0);
+    const totalVentasAnterior = ventasAnterior.reduce((total, record) => total + (Number(record.total) || 0), 0);
+    renderDashboardComparisons(
+      { sales: totalVentasPeriodo, health: saludPeriodo.length, weights: produccionPeriodo.length },
+      { sales: totalVentasAnterior, health: saludAnterior.length, weights: produccionAnterior.length },
+      previousRange
+    );
+
+    document.getElementById('stat-total').textContent = Activos.length;
+    document.getElementById('stat-Machos').textContent = Activos.filter(animal => animal.sexo === 'Macho').length;
+    document.getElementById('stat-Hembras').textContent = Activos.filter(animal => animal.sexo === 'Hembra').length;
+    document.getElementById('stat-Gestando').textContent = repro.filter(record => record.estado === 'Gestando').length;
+    document.getElementById('stat-partos-proximos').textContent = partosProximos.length;
+    document.getElementById('stat-eventos-salud').textContent = saludPeriodo.length;
+    document.getElementById('stat-ventas-total').textContent = formatMoney(totalVentasPeriodo);
+    document.getElementById('stat-pesos-mes').textContent = produccionPeriodo.length;
+    document.getElementById('stat-eventos-salud').closest('.stat-card').setAttribute('aria-label', `Ver ${saludPeriodo.length} eventos de salud del periodo`);
+    document.getElementById('stat-ventas-total').closest('.stat-card').setAttribute('aria-label', `Ver ventas por ${formatMoney(totalVentasPeriodo)} del periodo`);
+    document.getElementById('stat-pesos-mes').closest('.stat-card').setAttribute('aria-label', `Ver ${produccionPeriodo.length} pesajes del periodo`);
+    document.getElementById('dashboard-period-caption').textContent =
+      `Ventas, salud y pesajes: ${range.label}. El rebaño y los partos muestran el estado actual.`;
+    document.getElementById('chart-dashboard-period-caption').textContent =
+      `Ventas, salud y pesos: ${range.label.toLocaleLowerCase()}. El estado del rebaño es actual.`;
+    document.getElementById('dashboard-updated').lastChild.textContent =
+      `Actualizado ${today.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+
+    const births = repro
+      .filter(record => record.estado === 'Gestando')
+      .filter(record => record.fecha_parto_estimada)
+      .sort((a, b) => a.fecha_parto_estimada.localeCompare(b.fecha_parto_estimada))
+      .slice(0, 5)
+      .map(record => {
+        const days = daysUntilDashboardDate(record.fecha_parto_estimada, todayKey);
+        return {
+          title: record.Hembra?.identificador || 'Hembra sin identificador',
+          detail: days < 0 ? `Parto estimado vencido hace ${Math.abs(days)} días` :
+            days === 0 ? 'Parto estimado para hoy' : `Parto estimado en ${days} días`,
+          date: formatDate(record.fecha_parto_estimada),
+          urgency: days < 0 ? 'urgente' : days <= 7 ? 'proximo' : ''
+        };
+      });
+    renderDashboardList('dashboard-births-list', births, 'No hay partos estimados próximos.');
+    renderDashboardList('dashboard-health-list', saludPeriodo.slice(0, 5).map(record => ({
+      title: record.animal?.identificador || 'Animal sin identificar',
+      detail: [record.tipo, record.diagnostico].filter(Boolean).join(' · ') || 'Evento de salud',
+      date: formatDate(record.fecha)
+    })), 'No hay eventos de salud registrados.');
+    renderDashboardList('dashboard-sales-list', [...ventasPeriodo].reverse().slice(0, 5).map(record => ({
+      title: record.cliente || 'Venta sin cliente',
+      detail: formatMoney(record.total),
+      date: formatDate(record.fecha)
+    })), 'No hay ventas registradas.');
+    renderDashboardList('dashboard-weights-list', [...produccionPeriodo].reverse().slice(0, 5).map(record => ({
+      title: record.animal?.identificador || 'Animal sin identificar',
+      detail: `${record.peso ?? '—'} kg`,
+      date: formatDate(record.fecha)
+    })), 'No hay pesajes registrados.');
+
+    renderDashboardHerdChart();
+    buildChartReproduccion(repro);
+    updateDashboardWeightOptions(animals, produccion);
+    renderDashboardWeightChart(produccionPeriodo);
+    buildChartSalud(saludPeriodo);
+    buildChartVentas(ventasPeriodo);
+  }
+
+  function updateDashboardWeightOptions(animals, production) {
+    const select = document.getElementById('chart-peso-animal');
+    if (!select) return;
+    const recordedIds = new Set(production.map(record => record.id_animal).filter(Boolean));
+    const recordedAnimals = animals
+      .filter(animal => recordedIds.has(animal.id))
+      .sort((a, b) => {
+        if (a.estado === 'Activo' && b.estado !== 'Activo') return -1;
+        if (a.estado !== 'Activo' && b.estado === 'Activo') return 1;
+        return (a.identificador || '').localeCompare(b.identificador || '', 'es');
+      });
+    const previousSelection = select.value;
+    select.replaceChildren(new Option('Seleccionar animal...', ''));
+    recordedAnimals.forEach(animal => {
+      const name = animal.nombre ? ` — ${animal.nombre}` : '';
+      select.add(new Option(`${animal.identificador || 'Sin identificador'}${name}`, animal.id));
+    });
+    if (recordedAnimals.some(animal => animal.id === previousSelection)) {
+      select.value = previousSelection;
+    } else if (recordedAnimals.length) {
+      select.value = recordedAnimals[0].id;
+    }
+    select.disabled = !recordedAnimals.length;
+  }
+
+  function renderDashboardWeightChart(filteredProduction = null) {
+    const canvas = document.getElementById('chartPesos');
+    const select = document.getElementById('chart-peso-animal');
+    if (!canvas || !select) return;
+    const source = filteredProduction ||
+      filterDashboardPeriod(dashboardSnapshot?.produccion || [], dashboardCurrentRange || { start: null, end: null });
+    const animalId = select.value;
+    const records = source
+      .filter(record => record.id_animal === animalId && record.fecha && record.peso != null)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    if (!animalId) {
+      showDashboardChartEmpty('chartPesos', 'Registra pesajes para consultar la evolución individual.');
+      return;
+    }
+    if (!records.length) {
+      showDashboardChartEmpty('chartPesos', 'Este animal no tiene pesajes en el periodo seleccionado.');
+      return;
+    }
+    buildChart(
+      'chartPesos',
+      'line',
+      records.map(record => formatDate(record.fecha)),
+      [{
+        label: 'Peso registrado',
+        data: records.map(record => Number(record.peso)),
+        borderColor: '#2E7D4F',
+        backgroundColor: 'rgba(46,125,79,0.12)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 4,
+        pointBackgroundColor: '#1B5E35'
+      }],
+      {
+        scales: {
+          x: { ticks: { autoSkip: true, maxTicksLimit: 8, maxRotation: 0 } },
+          y: { beginAtZero: false, title: { display: true, text: 'Peso (kg)' } }
+        }
+      }
+    );
+  }
+
+  function showDashboardChartEmpty(canvasId, message) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    if (charts[canvasId]) {
+      charts[canvasId].destroy();
+      delete charts[canvasId];
+    }
+    canvas.hidden = true;
+    let empty = canvas.parentElement.querySelector(`[data-chart-empty="${canvasId}"]`);
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'chart-empty';
+      empty.dataset.chartEmpty = canvasId;
+      canvas.insertAdjacentElement('afterend', empty);
+    }
+    empty.textContent = message;
+  }
+
+  function daysUntilDashboardDate(date, todayKey) {
+    if (!date) return null;
+    const target = new Date(`${date}T00:00:00`);
+    const today = new Date(`${todayKey}T00:00:00`);
+    if (Number.isNaN(target.getTime())) return null;
+    return Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+  }
+
+  function renderDashboardList(containerId, rows, emptyMessage) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.replaceChildren();
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'dashboard-list-empty';
+      empty.textContent = emptyMessage;
+      container.append(empty);
+      return;
+    }
+    rows.forEach(row => {
+      const item = document.createElement('div');
+      item.className = `dashboard-item ${row.urgency || ''}`.trim();
+      const info = document.createElement('div');
+      info.className = 'dashboard-item-info';
+      const title = document.createElement('strong');
+      title.textContent = row.title;
+      const detail = document.createElement('span');
+      detail.textContent = row.detail;
+      info.append(title, detail);
+      const date = document.createElement('time');
+      date.textContent = row.date;
+      item.append(info, date);
+      container.append(item);
+    });
+  }
+
+  function buildChart(id, type, labels, datasets, options = {}) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    ctx.hidden = false;
+    ctx.parentElement.querySelector(`[data-chart-empty="${id}"]`)?.remove();
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type,
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { font: { family: 'Lato' }, color: '#3D2B1A' } },
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const value = Number(context.raw) || 0;
+                const label = context.dataset.label || context.label || '';
+                if (label === 'Ventas') return `${label}: ${formatMoney(value)}`;
+                if (label.includes('Peso')) return `${label}: ${value.toLocaleString('es-MX', { maximumFractionDigits: 2 })} kg`;
+                if (label.includes('Animales')) return `${context.label}: ${value} animales`;
+                return `${label}: ${value.toLocaleString('es-MX')} registros`;
+              }
+            }
+          }
+        },
+        ...options
+      }
+    });
+  }
+
+  function renderDashboardHerdChart() {
+    const animals = dashboardSnapshot?.animals || [];
+    const sex = document.getElementById('chart-estado-sexo')?.value || '';
+    const filteredAnimals = sex ? animals.filter(animal => animal.sexo === sex) : animals;
+    const note = document.getElementById('chart-estado-note');
+    if (note) {
+      const group = sex === 'Macho' ? 'Machos' : sex === 'Hembra' ? 'Hembras' : 'Todos los animales';
+      note.textContent = `${group}: distribución actual entre Activos, Vendidos y Muertos.`;
+    }
+    buildChartEstado(filteredAnimals);
+  }
+
+  function buildChartEstado(animals) {
+    if (!animals.length) {
+      const sex = document.getElementById('chart-estado-sexo')?.value;
+      showDashboardChartEmpty('chartEstado', sex
+        ? `No hay animales registrados en el grupo seleccionado (${sex === 'Macho' ? 'Machos' : 'Hembras'}).`
+        : 'Registra animales para consultar el estado del rebaño.');
+      return;
+    }
+    const Activos = animals.filter(a => a.estado === 'Activo').length;
+    const Vendidos = animals.filter(a => a.estado === 'Vendido').length;
+    const Muertos = animals.filter(a => a.estado === 'Muerto').length;
+    buildChart('chartEstado', 'doughnut', ['Activos', 'Vendidos', 'Muertos'], [{ label: 'Animales', data: [Activos, Vendidos, Muertos], backgroundColor: ['#2E7D4F','#C8A96A','#C0392B'], borderWidth: 0 }]);
+  }
+
+  function buildChartReproduccion(records) {
+    const statusLabels = [
+      { value: 'Gestando', label: 'Gestando', color: '#2E7D4F' },
+      { value: 'Pario', label: 'Parieron', color: '#2980B9' },
+      { value: 'Fallido', label: 'Fallidos', color: '#C0392B' }
+    ];
+    const counts = statusLabels.map(status =>
+      records.filter(record => record.estado === status.value).length
+    );
+    if (counts.every(count => count === 0)) {
+      showDashboardChartEmpty('chartReproduccion', 'No hay registros de reproducción para mostrar.');
+      return;
+    }
+    buildChart('chartReproduccion', 'doughnut', statusLabels.map(status => status.label), [{
+      label: 'Empadres',
+      data: counts,
+      backgroundColor: statusLabels.map(status => status.color),
+      borderWidth: 0
+    }]);
+  }
+
+  function buildChartSalud(data) {
+    const counts = {};
+    const typeLabels = {
+      enfermedad: 'Enfermedad',
+      Vacuna: 'Vacuna',
+      Tratamiento: 'Tratamiento',
+      Desparasitacion: 'Desparasitación'
+    };
+    (data || []).forEach(record => {
+      const type = typeLabels[record.tipo] || 'Sin tipo';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    if (!Object.keys(counts).length) {
+      showDashboardChartEmpty('chartSalud', 'No hay eventos de salud en el periodo seleccionado.');
+      return;
+    }
+    const healthOrder = ['Enfermedad', 'Vacuna', 'Tratamiento', 'Desparasitación', 'Sin tipo'];
+    const labels = Object.keys(counts).sort((a, b) => healthOrder.indexOf(a) - healthOrder.indexOf(b));
+    buildChart('chartSalud', 'bar', labels, [{
+      label: 'Eventos de salud',
+      data: labels.map(label => counts[label]),
+      backgroundColor: labels.map(label => label === 'Enfermedad' ? '#C0392B' : '#2E7D4F'),
+      borderRadius: 6
+    }], { scales: { y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Eventos' } } } });
+  }
+
+  function buildChartVentas(data) {
+    const grouped = {};
+    (data || []).forEach(v => {
+      if (!v.fecha) return;
+      const mes = v.fecha.slice(0, 7);
+      if (!grouped[mes]) grouped[mes] = 0;
+      grouped[mes] += Number(v.total) || 0;
+    });
+    const labels = Object.keys(grouped).sort();
+    if (!labels.length) {
+      showDashboardChartEmpty('chartVentas', 'No hay ventas en el periodo seleccionado.');
+      return;
+    }
+    buildChart('chartVentas', 'bar', labels.map(formatDashboardMonth), [{
+      label: 'Ventas',
+      data: labels.map(month => grouped[month]),
+      backgroundColor: 'rgba(46,125,79,0.7)',
+      borderColor: '#2E7D4F',
+      borderWidth: 1,
+      borderRadius: 6
+    }], {
+      scales: {
+        x: { ticks: { autoSkip: true, maxTicksLimit: 8, maxRotation: 0 } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Importe (MXN)' },
+          ticks: {
+            callback(value) {
+              return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                notation: 'compact',
+                maximumFractionDigits: 1
+              }).format(value);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function formatDashboardMonth(monthKey) {
+    const date = new Date(`${monthKey}-01T12:00:00`);
+    return date.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
+  }
+
+  // ============ REALTIME ============
+  function setupRealtime() {
+    db.channel('realtime-all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'animales' }, () => { showToast(' Cambio en Animales detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reproduccion' }, () => { showToast(' Cambio en Reproducción detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'produccion' }, () => { showToast(' Cambio en Producción detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'salud' }, () => { showToast(' Cambio en Salud detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ventas' }, () => { showToast(' Cambio en Ventas detectado'); refreshAppData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'detalle_venta' }, () => { showToast(' Cambio en Detalle Venta detectado'); refreshAppData(); })
+      .subscribe();
+  }
+
+  // ============ AUTH ============
+  let currentUser = null;
+  let currentProfile = null;
+
+  function closeUserMenu() {
+    const menu = document.querySelector('.user-menu');
+    const chip = document.querySelector('.user-chip');
+    menu?.classList.remove('open');
+    chip?.setAttribute('aria-expanded', 'false');
+  }
+
+  function getRoleLabel(role) {
+    return {
+      productor: 'Productor',
+      veterinario: 'Veterinario',
+      admin: 'Administrador'
+    }[role] || 'Sin rol asignado';
+  }
+
+  function getUserDisplayLabel(profile, user = currentUser) {
+    const name = profile?.nombre?.trim() || user?.user_metadata?.nombre?.trim();
+    if (name && name.toLowerCase() !== user?.email?.trim().toLowerCase()) return name;
+    if (profile?.rol || user?.user_metadata?.rol) {
+      return getRoleLabel(profile?.rol || user.user_metadata.rol);
+    }
+    return 'Usuario';
+  }
+
+  async function openUserProfile() {
+    closeUserMenu();
+    if (!currentUser) {
+      showToast('Inicia sesión para consultar tu perfil.', 'error');
+      return;
+    }
+    try {
+      currentProfile = await ensureUserProfile(currentUser);
+      document.getElementById('profile-name').value = currentProfile.nombre || '';
+      document.getElementById('profile-phone').value = currentProfile.telefono || '';
+      document.getElementById('profile-email').value = currentUser.email || '';
+      document.getElementById('profile-role').value = getRoleLabel(currentProfile.rol);
+      setProfileFormMessage('');
+      openModal('modal-user-profile');
+    } catch (error) {
+      setProfileFormMessage('No se pudo cargar el perfil: ' + getErrorMessage(error));
+      openModal('modal-user-profile');
+    }
+  }
+
+  function setProfileFormMessage(message, isSuccess = false) {
+    const element = document.getElementById('profile-form-message');
+    if (!element) return;
+    element.textContent = message;
+    element.hidden = !message;
+    element.classList.toggle('success', isSuccess);
+    element.classList.toggle('error', Boolean(message) && !isSuccess);
+  }
+
+  async function saveUserProfile() {
+    if (!currentUser) {
+      showToast('Tu sesión terminó. Inicia sesión nuevamente.', 'error');
+      return;
+    }
+    const nombre = document.getElementById('profile-name').value.trim();
+    const telefono = document.getElementById('profile-phone').value.trim();
+    if (!nombre) {
+      setProfileFormMessage('El nombre completo es obligatorio.');
+      document.getElementById('profile-name').focus();
+      return;
+    }
+
+    setProfileFormMessage('');
+    const button = document.getElementById('profile-save-button');
+    button.disabled = true;
+    button.textContent = 'Guardando...';
+    try {
+      const { data, error } = await db.from('usuarios')
+        .update({ nombre, telefono: telefono || null })
+        .eq('id', currentUser.id)
+        .select('nombre,rol,telefono')
+        .maybeSingle();
+      if (error) {
+        const details = getErrorMessage(error);
+        if (error.code === '42501' || /row-level security|permission denied/i.test(details)) {
+          throw new Error('Supabase no permite modificar este perfil. Ejecuta nuevamente database/schema_update.sql en el SQL Editor del mismo proyecto de Supabase y vuelve a iniciar sesión.');
+        }
+        throw new Error(details);
+      }
+      if (!data) {
+        throw new Error('No se actualizó ningún perfil. Ejecuta database/schema_update.sql en el mismo proyecto de Supabase y vuelve a iniciar sesión.');
+      }
+
+      currentProfile = data;
+      const displayName = getUserDisplayLabel(data);
+      document.getElementById('user-display').textContent = displayName;
+      document.getElementById('user-avatar').textContent =
+        displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+      closeModal('modal-user-profile');
+      showToast('Perfil actualizado.');
+    } catch (error) {
+      setProfileFormMessage('No se pudo guardar el perfil: ' + getErrorMessage(error));
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Guardar perfil';
+    }
+  }
+
+  function openAccountSettings() {
+    closeUserMenu();
+    if (!currentUser) {
+      showToast('Inicia sesión para cambiar la seguridad de tu cuenta.', 'error');
+      return;
+    }
+    ['account-current-password', 'account-new-password', 'account-confirm-password']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    openModal('modal-account-settings');
+  }
+
+  async function changeAccountPassword() {
+    if (!currentUser?.email) {
+      showToast('No se pudo identificar el correo de la cuenta actual.', 'error');
+      return;
+    }
+    const currentPassword = document.getElementById('account-current-password').value;
+    const newPassword = document.getElementById('account-new-password').value;
+    const confirmPassword = document.getElementById('account-confirm-password').value;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToast('Completa la contraseña actual y los dos campos de la nueva contraseña.', 'error');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast('La nueva contraseña debe tener al menos 6 caracteres.', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('La confirmación no coincide con la nueva contraseña.', 'error');
+      document.getElementById('account-confirm-password').focus();
+      return;
+    }
+    if (newPassword === currentPassword) {
+      showToast('La nueva contraseña debe ser distinta a la actual.', 'error');
+      return;
+    }
+
+    const button = document.getElementById('password-save-button');
+    button.disabled = true;
+    button.textContent = 'Verificando...';
+    try {
+      const { error: verificationError } = await db.auth.signInWithPassword({
+        email: currentUser.email,
+        password: currentPassword
+      });
+      if (verificationError) {
+        throw new Error(verificationError.message === 'Invalid login credentials'
+          ? 'La contraseña actual es incorrecta.'
+          : verificationError.message);
+      }
+
+      button.textContent = 'Actualizando...';
+      const { data, error } = await db.auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message);
+      if (data?.user) currentUser = data.user;
+      closeModal('modal-account-settings');
+      showToast('Contraseña actualizada correctamente.');
+    } catch (error) {
+      showToast('No se pudo actualizar la contraseña: ' + getErrorMessage(error), 'error');
+    } finally {
+      ['account-current-password', 'account-new-password', 'account-confirm-password']
+        .forEach(id => { document.getElementById(id).value = ''; });
+      button.disabled = false;
+      button.textContent = 'Actualizar contraseña';
+    }
+  }
+
+  function switchAuthTab(tab) {
+    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.querySelectorAll('.auth-tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    hideAuthError();
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function hideAuthError() {
+    const el = document.getElementById('auth-error');
+    if (el) el.classList.remove('show');
+  }
+
+  function getErrorMessage(error) {
+    if (error instanceof Error) return error.message;
+    if (error && typeof error === 'object') {
+      const details = [error.message, error.details, error.hint, error.code].filter(Boolean);
+      if (details.length) return details.join(' — ');
+      return JSON.stringify(error);
+    }
+    return String(error);
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showAuthError('Por favor ingresa correo y contraseña.'); return; }
+
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; btn.textContent = 'Verificando...';
+    hideAuthError();
+
+    try {
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) {
+        showAuthError(error.message === 'Invalid login credentials'
+          ? 'Correo o contraseña incorrectos. Si cambiaste de proyecto, registra una cuenta nueva.'
+          : error.message);
+        return;
+      }
+
+      onLoginSuccess(data.user);
+    } catch (error) {
+      showAuthError('No se pudo conectar con Supabase: ' + getErrorMessage(error) + '. Verifica la URL y la clave pública del mismo proyecto.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Entrar al Sistema';
+    }
+  }
+
+  async function doRegister() {
+    const nombre = document.getElementById('reg-nombre').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const telefono = document.getElementById('reg-telefono').value.trim();
+    const rol = document.getElementById('reg-rol').value;
+    const password = document.getElementById('reg-password').value;
+    const password2 = document.getElementById('reg-password2').value;
+
+    if (!nombre || !email || !password) { showAuthError('Nombre, correo y contraseña son obligatorios.'); return; }
+    if (password.length < 6) { showAuthError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (password !== password2) { showAuthError('Las contraseñas no coinciden.'); return; }
+
+    const btn = document.getElementById('btn-register');
+    btn.disabled = true; btn.textContent = 'Creando cuenta...';
+    hideAuthError();
+
+    const withTimeout = (request, label) => new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`La solicitud de ${label} tardó demasiado. Verifica tu conexión y el proyecto de Supabase.`));
+      }, 20000);
+      Promise.resolve(request).then(
+        result => {
+          clearTimeout(timeoutId);
+          resolve(result);
+        },
+        error => {
+          clearTimeout(timeoutId);
+          reject(error);
+        }
+      );
+    });
+
+    try {
+      const { data, error } = await withTimeout(
+        db.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { nombre, rol, telefono: telefono || null }
+          }
+        }),
+        'registro'
+      );
+      if (error) {
+        showAuthError(error.message);
+        return;
+      }
+      if (!data.user) {
+        showAuthError('Supabase no devolvió el usuario. Verifica la configuración de registro del proyecto.');
+        return;
+      }
+
+      switchAuthTab('login');
+      document.getElementById('login-email').value = email;
+      showToast(data.session
+        ? 'Cuenta y perfil creados. Ya puedes iniciar sesión.'
+        : 'Cuenta creada. Revisa tu correo para confirmarla; el perfil se guardará automáticamente.');
+    } catch (error) {
+      showAuthError('No se pudo completar el registro: ' + getErrorMessage(error));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Crear Cuenta';
+    }
+  }
+
+  async function doLogout() {
+    if (!confirm('¿Cerrar sesión?')) return;
+    await db.auth.signOut();
+    currentUser = null;
+    currentProfile = null;
+    document.getElementById('app-shell').classList.remove('visible');
+    document.getElementById('auth-screen').classList.add('visible');
+    document.getElementById('login-password').value = '';
+    showToast(' Sesión cerrada');
+  }
+
+  function onLoginSuccess(user) {
+    currentUser = user;
+    currentProfile = null;
+    document.getElementById('auth-screen').classList.remove('visible');
+    document.getElementById('app-shell').classList.add('visible');
+
+    const initialDisplay = getUserDisplayLabel(null, user);
+    document.getElementById('user-display').textContent = initialDisplay;
+    document.getElementById('user-avatar').textContent =
+      initialDisplay.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+
+    ensureUserProfile(user).then(profile => {
+      currentProfile = profile;
+      const display = getUserDisplayLabel(profile, user);
+      document.getElementById('user-display').textContent = display;
+      document.getElementById('user-avatar').textContent =
+        display.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+    }).catch(error => {
+      showToast('No se pudo cargar el perfil: ' + getErrorMessage(error), 'error');
+      document.getElementById('user-display').textContent = initialDisplay;
+    });
+
+    initApp();
+  }
+
+  async function ensureUserProfile(user) {
+    const { data: profile, error: selectError } = await db.from('usuarios')
+      .select('nombre,rol,telefono')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (selectError) throw new Error(selectError.message);
+    if (profile) return profile;
+
+    const metadata = user.user_metadata || {};
+    const allowedRoles = ['productor', 'veterinario', 'admin'];
+    const role = allowedRoles.includes(metadata.rol) ? metadata.rol : null;
+    const { error: upsertError } = await db.from('usuarios').upsert({
+      id: user.id,
+      nombre: metadata.nombre || 'Usuario',
+      rol: role,
+      telefono: metadata.telefono || null
+    });
+    if (upsertError) throw new Error(upsertError.message);
+    return { nombre: metadata.nombre || user.email, rol: role, telefono: metadata.telefono || null };
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchAuthTab(btn.dataset.tab));
+    });
+
+    const userChip = document.querySelector('.user-chip');
+    const userMenu = document.querySelector('.user-menu');
+    if (userChip && userMenu) {
+      userChip.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const open = userMenu.classList.toggle('open');
+        userChip.setAttribute('aria-expanded', String(open));
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!userChip.contains(event.target) && !userMenu.contains(event.target)) {
+          userMenu.classList.remove('open');
+          userChip.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          userMenu.classList.remove('open');
+          userChip.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  });
+
+  // ============ INIT ============
+  async function initApp() {
+    const { error: testError } = await db.from('animales').select('id').limit(1);
+    if (testError) { showToast(' Error de conexión: ' + testError.message, 'error'); return; }
+
+    await loadRazas();
+    await refreshAppData();
+    setupRealtime();
+  }
+
+  db.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      onLoginSuccess(session.user);
+    } else {
+      document.getElementById('auth-screen').classList.add('visible');
+    }
+  });
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('app-shell').classList.remove('visible');
+      document.getElementById('auth-screen').classList.add('visible');
+    }
+  });
+</script>
