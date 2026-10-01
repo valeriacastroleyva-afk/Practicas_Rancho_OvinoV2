@@ -380,14 +380,14 @@
     tbody tr:hover { background:var(--verde-suave); }
     tbody td { padding:0.8rem 1rem; vertical-align:middle; }
     .badge { display:inline-block; padding:0.25rem 0.7rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
-    .badge-activo { background: var(--verde-suave); color: var(--verde); }
-    .badge-vendido { background:#FEF3C7; color:#92400E; }
-    .badge-muerto { background:#FEE2E2; color:#991B1B; }
-    .badge-gestando { background:#DBEAFE; color:#1E40AF; }
-    .badge-pario { background: var(--verde-suave); color: var(--verde); }
-    .badge-fallido { background:#FEE2E2; color:#991B1B; }
-    .badge-macho { background:#DBEAFE; color:#1E40AF; }
-    .badge-hembra { background:#FCE7F3; color:#9D174D; }
+    .badge-Activo { background: var(--verde-suave); color: var(--verde); }
+    .badge-Vendido { background:#FEF3C7; color:#92400E; }
+    .badge-Muerto { background:#FEE2E2; color:#991B1B; }
+    .badge-Gestando { background:#DBEAFE; color:#1E40AF; }
+    .badge-Pario { background: var(--verde-suave); color: var(--verde); }
+    .badge-Fallido { background:#FEE2E2; color:#991B1B; }
+    .badge-Macho { background:#DBEAFE; color:#1E40AF; }
+    .badge-Hembra { background:#FCE7F3; color:#9D174D; }
     .stat-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0.85rem; margin:1rem 0 1.5rem; align-items:stretch; }
     .stat-card { position:relative; appearance:none; text-align:left; font:inherit; color:inherit; cursor:pointer; background:#fff; border-radius:14px; overflow:hidden; border:1px solid rgba(46,107,62,0.14); box-shadow:0 4px 12px rgba(15,51,32,0.06); transition:transform 0.2s ease, box-shadow 0.2s ease; min-height:128px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; padding:1rem 1.15rem 1rem 1.3rem; }
     .stat-card:hover { transform:translateY(-2px); box-shadow:0 9px 18px rgba(15,51,32,0.11); }
@@ -867,20 +867,20 @@
         </section>
 
         <div class="stat-cards" id="stat-cards">
-          <button class="stat-card verde" type="button" onclick="switchTab('animales')" aria-label="Ver animales activos">
+          <button class="stat-card verde" type="button" onclick="switchTab('animales')" aria-label="Ver animales Activos">
             <div class="stat-value" id="stat-total">—</div>
-            <div class="stat-label">Animales activos</div>
+            <div class="stat-label">Animales Activos</div>
           </button>
-          <button class="stat-card dorado" type="button" onclick="switchTab('animales')" aria-label="Ver machos activos">
-            <div class="stat-value" id="stat-machos">—</div>
-            <div class="stat-label">Machos activos</div>
+          <button class="stat-card dorado" type="button" onclick="switchTab('animales')" aria-label="Ver Machos Activos">
+            <div class="stat-value" id="stat-Machos">—</div>
+            <div class="stat-label">Machos Activos</div>
           </button>
-          <button class="stat-card tierra" type="button" onclick="switchTab('animales')" aria-label="Ver hembras activas">
-            <div class="stat-value" id="stat-hembras">—</div>
+          <button class="stat-card tierra" type="button" onclick="switchTab('animales')" aria-label="Ver Hembras activas">
+            <div class="stat-value" id="stat-Hembras">—</div>
             <div class="stat-label">Hembras activas</div>
           </button>
-          <button class="stat-card dorado" type="button" onclick="switchTab('reproduccion')" aria-label="Ver hembras en gestación">
-            <div class="stat-value" id="stat-gestando">—</div>
+          <button class="stat-card dorado" type="button" onclick="switchTab('reproduccion')" aria-label="Ver Hembras en gestación">
+            <div class="stat-value" id="stat-Gestando">—</div>
             <div class="stat-label">Hembras gestantes</div>
           </button>
           <button class="stat-card dorado" type="button" onclick="switchTab('reproduccion')" aria-label="Ver partos estimados para los próximos 30 días">
@@ -973,16 +973,16 @@
               <label class="sr-only" for="chart-estado-sexo">Filtrar estado del rebaño por sexo</label>
               <select id="chart-estado-sexo" aria-label="Filtrar estado actual del rebaño por sexo" onchange="renderDashboardHerdChart()">
                 <option value="">Todos</option>
-                <option value="macho">Machos</option>
-                <option value="hembra">Hembras</option>
+                <option value="Macho">Machos</option>
+                <option value="Hembra">Hembras</option>
               </select>
             </div>
-            <p class="chart-note" id="chart-estado-note">Distribución actual entre animales activos, vendidos y muertos.</p>
+            <p class="chart-note" id="chart-estado-note">Distribución actual entre animales Activos, Vendidos y Muertos.</p>
             <canvas id="chartEstado" height="220"></canvas>
           </div>
           <div class="chart-card">
             <div class="chart-title"><span>Resultados de reproducción</span></div>
-            <p class="chart-note">Empadres registrados por estado: gestando, parieron y fallidos.</p>
+            <p class="chart-note">Empadres registrados por estado: Gestando, parieron y Fallidos.</p>
             <canvas id="chartReproduccion" height="220"></canvas>
           </div>
           <div class="chart-card">
@@ -1034,9 +1034,9 @@
           </div>
         </div>
         <div class="table-toolbar" id="filters-table-reproduccion">
-          <input type="search" id="search-table-reproduccion" placeholder="Buscar por hembra, macho o notas..." oninput="applyTableFilters('table-reproduccion')">
+          <input type="search" id="search-table-reproduccion" placeholder="Buscar por Hembra, Macho o notas..." oninput="applyTableFilters('table-reproduccion')">
           <select aria-label="Filtrar reproducción por estado" data-filter-column="6" data-filter-label="Todos los estados" onchange="applyTableFilters('table-reproduccion')"><option value="">Todos los estados</option></select>
-          <select aria-label="Filtrar reproducción por hembra" data-filter-column="0" data-filter-label="Todas las hembras" onchange="applyTableFilters('table-reproduccion')"><option value="">Todas las hembras</option></select>
+          <select aria-label="Filtrar reproducción por Hembra" data-filter-column="0" data-filter-label="Todas las Hembras" onchange="applyTableFilters('table-reproduccion')"><option value="">Todas las Hembras</option></select>
         </div>
         <div id="table-reproduccion" class="table-wrap"></div>
       </div>
@@ -1164,13 +1164,13 @@
             <div class="form-group"><label>Identificador *</label><input type="text" id="a-identificador" placeholder="Ej: B-001"></div>
             <div class="form-group"><label>Nombre</label><input type="text" id="a-nombre" placeholder="Ej: Lupita"></div>
             <div class="form-group"><label>Sexo *</label>
-              <select id="a-sexo"><option value="">Seleccionar...</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select>
+              <select id="a-sexo"><option value="">Seleccionar...</option><option value="Macho">Macho</option><option value="Hembra">Hembra</option></select>
             </div>
             <div class="form-group"><label>Raza</label><select id="a-raza" onchange="onRazaChange('a-raza')"><option value="">Seleccionar raza...</option></select></div>
             <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="a-nacimiento"></div>
             <div class="form-group"><label>Peso Inicial (kg)</label><input type="number" id="a-peso-inicial" step="0.01"></div>
             <div class="form-group"><label>Estado General</label>
-              <select id="a-estado"><option value="activo">Activo</option><option value="vendido">Vendido</option><option value="muerto">Muerto</option></select>
+              <select id="a-estado"><option value="Activo">Activo</option><option value="Vendido">Vendido</option><option value="Muerto">Muerto</option></select>
             </div>
             <div class="form-group"><label>Estado Productivo</label>
               <select id="a-estado-productivo">
@@ -1212,10 +1212,10 @@
           <div class="form-grid">
             <div class="form-group"><label>Identificador *</label><input type="text" id="ea-identificador"></div>
             <div class="form-group"><label>Nombre</label><input type="text" id="ea-nombre"></div>
-            <div class="form-group"><label>Sexo *</label><select id="ea-sexo"><option value="">Seleccionar...</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select></div>
+            <div class="form-group"><label>Sexo *</label><select id="ea-sexo"><option value="">Seleccionar...</option><option value="Macho">Macho</option><option value="Hembra">Hembra</option></select></div>
             <div class="form-group"><label>Raza</label><select id="ea-raza" onchange="onRazaChange('ea-raza')"></select></div>
             <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="ea-nacimiento"></div>
-            <div class="form-group"><label>Estado General</label><select id="ea-estado"><option value="activo">Activo</option><option value="vendido">Vendido</option><option value="muerto">Muerto</option></select></div>
+            <div class="form-group"><label>Estado General</label><select id="ea-estado"><option value="Activo">Activo</option><option value="Vendido">Vendido</option><option value="Muerto">Muerto</option></select></div>
             <div class="form-group"><label>Estado Productivo</label><select id="ea-estado-productivo"><option value="">Ninguno</option><option value="gestante">Gestante</option><option value="parida">Parida</option><option value="servicio">Servicio</option><option value="primala">Primala</option><option value="cordera">Cordera</option><option value="lactando">Lactando</option><option value="destetada">Destetada</option><option value="semental">Semental</option><option value="engorda">Engorda</option></select></div>
             <div class="form-group"><label>Número de Partos</label><input type="number" id="ea-num-partos" min="0"></div>
             <div class="form-group"><label>Tipo de Nacimiento</label><select id="ea-tipo-nacimiento"><option value="">Ninguno</option><option value="sencillo">Sencillo</option><option value="doble">Doble</option><option value="triple">Triple</option></select></div>
@@ -1234,12 +1234,12 @@
         <div class="modal-header"><span> Registrar Empadre</span><button class="modal-close" onclick="closeModal('modal-reproduccion')">&times;</button></div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group"><label>Hembra *</label><select id="r-hembra"><option value="">Seleccionar...</option></select></div>
-            <div class="form-group"><label>Macho *</label><select id="r-macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Hembra *</label><select id="r-Hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="r-Macho"><option value="">Seleccionar...</option></select></div>
             <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="r-empadre"></div>
             <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="r-parto-real"></div>
             <div class="form-group"><label>Número de Crías</label><input type="number" id="r-crias" min="0" placeholder="0"></div>
-            <div class="form-group"><label>Estado</label><select id="r-estado"><option value="gestando">Gestando</option><option value="pario">Parió</option><option value="fallido">Fallido</option></select></div>
+            <div class="form-group"><label>Estado</label><select id="r-estado"><option value="Gestando">Gestando</option><option value="Pario">Parió</option><option value="Fallido">Fallido</option></select></div>
             <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="r-observaciones" rows="2"></textarea></div>
             <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="r-notas-repro" rows="2"></textarea></div>
           </div>
@@ -1257,12 +1257,12 @@
         <div class="modal-body">
           <input type="hidden" id="ep-id">
           <div class="form-grid">
-            <div class="form-group"><label>Hembra *</label><select id="ep-hembra"><option value="">Seleccionar...</option></select></div>
-            <div class="form-group"><label>Macho *</label><select id="ep-macho"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Hembra *</label><select id="ep-Hembra"><option value="">Seleccionar...</option></select></div>
+            <div class="form-group"><label>Macho *</label><select id="ep-Macho"><option value="">Seleccionar...</option></select></div>
             <div class="form-group"><label>Fecha Empadre *</label><input type="date" id="ep-empadre"></div>
             <div class="form-group"><label>Fecha Parto Real</label><input type="date" id="ep-parto-real"></div>
             <div class="form-group"><label>Número de Crías</label><input type="number" id="ep-crias" min="0" placeholder="0"></div>
-            <div class="form-group" style="grid-column:1/-1"><label>Estado *</label><select id="ep-estado"><option value="gestando">Gestando</option><option value="pario">Parió</option><option value="fallido">Fallido</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Estado *</label><select id="ep-estado"><option value="Gestando">Gestando</option><option value="Pario">Parió</option><option value="Fallido">Fallido</option></select></div>
             <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="ep-observaciones" rows="2"></textarea></div>
           </div>
         </div>
@@ -1336,12 +1336,12 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Hembra *</label>
-          <select id="ep-hembra"><option value="">Seleccionar...</option></select>
+          <select id="ep-Hembra"><option value="">Seleccionar...</option></select>
         </div>
 
         <div class="form-group">
           <label>Macho *</label>
-          <select id="ep-macho"><option value="">Seleccionar...</option></select>
+          <select id="ep-Macho"><option value="">Seleccionar...</option></select>
         </div>
 
         <div class="form-group">
@@ -1362,9 +1362,9 @@
         <div class="form-group" style="grid-column:1/-1">
           <label>Estado *</label>
           <select id="ep-estado">
-            <option value="gestando">Gestando</option>
-            <option value="pario">Parió</option>
-            <option value="fallido">Fallido</option>
+            <option value="Gestando">Gestando</option>
+            <option value="Pario">Parió</option>
+            <option value="Fallido">Fallido</option>
           </select>
         </div>
 
@@ -1388,11 +1388,11 @@
           <div class="form-grid">
             <div class="form-group"><label>Animal *</label><select id="s-animal"><option value="">Seleccionar...</option></select></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="s-fecha"></div>
-            <div class="form-group"><label>Tipo *</label><select id="s-tipo"><option value="">Seleccionar...</option><option value="enfermedad">Enfermedad</option><option value="vacuna">Vacuna</option><option value="tratamiento">Tratamiento</option><option value="desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Tipo *</label><select id="s-tipo"><option value="">Seleccionar...</option><option value="enfermedad">Enfermedad</option><option value="Vacuna">Vacuna</option><option value="Tratamiento">Tratamiento</option><option value="Desparasitacion">Desparasitación</option></select></div>
             <div class="form-group"><label>Medicamento</label><input type="text" id="s-medicamento"></div>
             <div class="form-group"><label>Dosis</label><input type="text" id="s-dosis"></div>
             <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="s-diagnostico" rows="2"></textarea></div>
-            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="s-tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="s-Tratamiento" rows="2"></textarea></div>
             <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="s-observaciones" rows="2"></textarea></div>
             <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="s-notas" rows="2"></textarea></div>
           </div>
@@ -1411,11 +1411,11 @@
           <input type="hidden" id="es-id">
           <div class="form-grid">
             <div class="form-group"><label>Fecha *</label><input type="date" id="es-fecha"></div>
-            <div class="form-group"><label>Tipo *</label><select id="es-tipo"><option value="enfermedad">Enfermedad</option><option value="vacuna">Vacuna</option><option value="tratamiento">Tratamiento</option><option value="desparasitacion">Desparasitación</option></select></div>
+            <div class="form-group"><label>Tipo *</label><select id="es-tipo"><option value="enfermedad">Enfermedad</option><option value="Vacuna">Vacuna</option><option value="Tratamiento">Tratamiento</option><option value="Desparasitacion">Desparasitación</option></select></div>
             <div class="form-group"><label>Medicamento</label><input type="text" id="es-medicamento"></div>
             <div class="form-group"><label>Dosis</label><input type="text" id="es-dosis"></div>
             <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico</label><textarea id="es-diagnostico" rows="2"></textarea></div>
-            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="es-tratamiento" rows="2"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Tratamiento</label><textarea id="es-Tratamiento" rows="2"></textarea></div>
             <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="es-observaciones" rows="2"></textarea></div>
             <div class="form-group" style="grid-column:1/-1"><label>Notas Generales</label><textarea id="es-notas" rows="2"></textarea></div>
           </div>
@@ -1435,7 +1435,7 @@
             <div class="form-group"><label>Fecha *</label><input type="date" id="v-fecha"></div>
             <div class="form-group"><label>Cliente *</label><select id="v-cliente" onchange="onClienteChange('v-cliente')"><option value="">Seleccionar cliente...</option></select></div>
             <div class="form-group"><label>Tipo de Venta *</label><select id="v-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
-            <div class="form-group"><label>Animal vendido / origen de carne *</label><select id="v-animal"><option value="">Seleccionar animal...</option></select></div>
+            <div class="form-group"><label>Animal Vendido / origen de carne *</label><select id="v-animal"><option value="">Seleccionar animal...</option></select></div>
             <div class="form-group"><label>Total ($)</label><input type="number" id="v-total" step="0.01" placeholder="0.00"></div>
             <div class="form-group"><label>Costo ($)</label><input type="number" id="v-costo" step="0.01" placeholder="0.00"></div>
             <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="v-notas" rows="2" placeholder="Ej: Se vendió a cuenta de carne 20 kg..."></textarea></div>
@@ -1459,7 +1459,7 @@
             <div class="form-group"><label>Fecha *</label><input type="date" id="ev-fecha"></div>
             <div class="form-group"><label>Cliente</label><input type="text" id="ev-cliente"></div>
             <div class="form-group"><label>Tipo de Venta</label><select id="ev-tipo"><option value="carne">Carne</option><option value="pie_cria">Pie de Cría</option></select></div>
-            <div class="form-group"><label>Animal vendido / origen de carne</label><select id="ev-animal"><option value="">Seleccionar animal...</option></select></div>
+            <div class="form-group"><label>Animal Vendido / origen de carne</label><select id="ev-animal"><option value="">Seleccionar animal...</option></select></div>
             <div id="ev-animal-info" style="display:none;grid-column:1/-1;color:var(--gris-calido);font-size:0.85rem"></div>
             <div class="form-group"><label>Total ($)</label><input type="number" id="ev-total" step="0.01"></div>
             <div class="form-group"><label>Costo ($)</label><input type="number" id="ev-costo" step="0.01"></div>
@@ -1808,25 +1808,25 @@ function switchTab(name, ev) {
   }
 
   const ESTADO_PROD_BADGES = {
-    gestante: 'badge-gestando',
-    parida: 'badge-pario',
-    servicio: 'badge-macho',
-    primala: 'badge-hembra',
-    cordera: 'badge-vendido',
-    lactando: 'badge-activo',
-    destetada: 'badge-vendido',
-    semental: 'badge-macho',
-    engorda: 'badge-muerto'
+    gestante: 'badge-Gestando',
+    parida: 'badge-Pario',
+    servicio: 'badge-Macho',
+    primala: 'badge-Hembra',
+    cordera: 'badge-Vendido',
+    lactando: 'badge-Activo',
+    destetada: 'badge-Vendido',
+    semental: 'badge-Macho',
+    engorda: 'badge-Muerto'
   };
 
 function populateAnimalSelects() {
   const selects = [
     'a-padre',
     'a-madre',
-    'r-hembra',
-    'r-macho',
-    'ep-hembra',
-    'ep-macho',
+    'r-Hembra',
+    'r-Macho',
+    'ep-Hembra',
+    'ep-Macho',
     'p-animal',
     's-animal',
     'v-animal',
@@ -1850,7 +1850,7 @@ function populateAnimalSelects() {
     }
 
     const animalesDisponibles = id === 'v-animal' || id === 'ev-animal'
-      ? animalesCache.filter(animal => animal.estado === 'activo' || animal.id === valorActual)
+      ? animalesCache.filter(animal => animal.estado === 'Activo' || animal.id === valorActual)
       : animalesCache;
     select.innerHTML = `
       <option value="">${textoInicial}</option>
@@ -1893,10 +1893,10 @@ function populateAnimalSelects() {
       <tr>
         <td><strong>${a.identificador}</strong></td>
         <td>${a.nombre || '—'}</td>
-        <td>${badge(a.sexo, {'macho':'badge-macho','hembra':'badge-hembra'})}</td>
+        <td>${badge(a.sexo, {'Macho':'badge-Macho','Hembra':'badge-Hembra'})}</td>
         <td>${a.raza || '—'}</td>
         <td title="${a.fecha_nacimiento || ''}">${calcularEdad(a.fecha_nacimiento)}</td>
-        <td>${badge(a.estado, {'activo':'badge-activo','vendido':'badge-vendido','muerto':'badge-muerto'})}</td>
+        <td>${badge(a.estado, {'Activo':'badge-Activo','Vendido':'badge-Vendido','Muerto':'badge-Muerto'})}</td>
         <td>${a.estado_productivo ? badge(a.estado_productivo, ESTADO_PROD_BADGES) : '—'}</td>
         <td>${a.peso_inicial ? a.peso_inicial + ' kg' : '—'}</td>
         <td>${a.numero_partos ?? '—'}</td>
@@ -2002,7 +2002,7 @@ function populateAnimalSelects() {
     document.getElementById('ea-nombre').value = a.nombre || '';
     document.getElementById('ea-sexo').value = a.sexo || '';
     document.getElementById('ea-nacimiento').value = a.fecha_nacimiento || '';
-    document.getElementById('ea-estado').value = a.estado || 'activo';
+    document.getElementById('ea-estado').value = a.estado || 'Activo';
     document.getElementById('ea-estado-productivo').value = a.estado_productivo || '';
     document.getElementById('ea-num-partos').value = a.numero_partos ?? '';
     document.getElementById('ea-tipo-nacimiento').value = a.tipo_nacimiento || '';
@@ -2039,7 +2039,7 @@ function populateAnimalSelects() {
   // ============ REPRODUCCION ============
   async function loadReproduccion() {
     loading('table-reproduccion');
-    const { data, error } = await db.from('reproduccion').select(`*, hembra:id_hembra(identificador,nombre), macho:id_macho(identificador,nombre)`).order('created_at', { ascending: false });
+    const { data, error } = await db.from('reproduccion').select(`*, Hembra:id_Hembra(identificador,nombre), Macho:id_Macho(identificador,nombre)`).order('created_at', { ascending: false });
     if (error) { showToast('Error cargando reproducción', 'error'); return; }
     const cont = document.getElementById('table-reproduccion');
     if (!cont) return;
@@ -2052,16 +2052,16 @@ function populateAnimalSelects() {
 
 const rows = data.map(r => `
   <tr>
-    <td>${r.hembra ? r.hembra.identificador : '—'}</td>
-    <td>${r.macho ? r.macho.identificador : '—'}</td>
+    <td>${r.Hembra ? r.Hembra.identificador : '—'}</td>
+    <td>${r.Macho ? r.Macho.identificador : '—'}</td>
     <td>${formatDate(r.fecha_empadre)}</td>
     <td>${formatDate(r.fecha_parto_estimada)}</td>
     <td>${formatDate(r.fecha_parto_real)}</td>
     <td>${r.numero_crias ?? '—'}</td>
     <td>${badge(r.estado, {
-      gestando: 'badge-gestando',
-      pario: 'badge-pario',
-      fallido: 'badge-fallido'
+      Gestando: 'badge-Gestando',
+      Pario: 'badge-Pario',
+      Fallido: 'badge-Fallido'
     })}</td>
     <td>${r.notas || r.observaciones || '—'}</td>
     <td>
@@ -2097,8 +2097,8 @@ const rows = data.map(r => `
 
   async function saveReproduccion() {
     const payload = {
-      id_hembra: document.getElementById('r-hembra').value,
-      id_macho: document.getElementById('r-macho').value,
+      id_Hembra: document.getElementById('r-Hembra').value,
+      id_Macho: document.getElementById('r-Macho').value,
       fecha_empadre: document.getElementById('r-empadre').value,
       fecha_parto_real: document.getElementById('r-parto-real').value || null,
       numero_crias: document.getElementById('r-crias').value ? parseInt(document.getElementById('r-crias').value) : null,
@@ -2107,8 +2107,8 @@ const rows = data.map(r => `
       notas: document.getElementById('r-notas-repro').value.trim() || null
     };
 
-    if (!payload.id_hembra || !payload.id_macho || !payload.fecha_empadre) {
-      showToast('Hembra, macho y fecha son obligatorios', 'error');
+    if (!payload.id_Hembra || !payload.id_Macho || !payload.fecha_empadre) {
+      showToast('Hembra, Macho y fecha son obligatorios', 'error');
       return;
     }
 
@@ -2144,12 +2144,12 @@ async function openEditParto(id) {
   }
 
   document.getElementById('ep-id').value = parto.id || '';
-  document.getElementById('ep-hembra').value = parto.id_hembra || '';
-  document.getElementById('ep-macho').value = parto.id_macho || '';
+  document.getElementById('ep-Hembra').value = parto.id_Hembra || '';
+  document.getElementById('ep-Macho').value = parto.id_Macho || '';
   document.getElementById('ep-empadre').value = parto.fecha_empadre || '';
   document.getElementById('ep-parto-real').value = parto.fecha_parto_real || '';
   document.getElementById('ep-crias').value = parto.numero_crias ?? '';
-  document.getElementById('ep-estado').value = parto.estado || 'gestando';
+  document.getElementById('ep-estado').value = parto.estado || 'Gestando';
 document.getElementById('ep-observaciones').value =
   parto.observaciones || parto.notas || '';
 
@@ -2159,8 +2159,8 @@ async function updateParto() {
   const id = document.getElementById('ep-id').value;
 
   const payload = {
-    id_hembra: document.getElementById('ep-hembra').value,
-    id_macho: document.getElementById('ep-macho').value,
+    id_Hembra: document.getElementById('ep-Hembra').value,
+    id_Macho: document.getElementById('ep-Macho').value,
     fecha_empadre: document.getElementById('ep-empadre').value,
     fecha_parto_real: document.getElementById('ep-parto-real').value || null,
     numero_crias: document.getElementById('ep-crias').value !== ''
@@ -2175,9 +2175,9 @@ async function updateParto() {
     return;
   }
 
-  if (!payload.id_hembra || !payload.id_macho || !payload.fecha_empadre) {
+  if (!payload.id_Hembra || !payload.id_Macho || !payload.fecha_empadre) {
     showToast(
-      'Hembra, macho y fecha de empadre son obligatorios',
+      'Hembra, Macho y fecha de empadre son obligatorios',
       'error'
     );
     return;
@@ -2355,7 +2355,7 @@ async function updateParto() {
       return;
     }
 
-    const tipoMap = { enfermedad:'badge-muerto', vacuna:'badge-activo', tratamiento:'badge-gestando', desparasitacion:'badge-vendido' };
+    const tipoMap = { enfermedad:'badge-Muerto', Vacuna:'badge-Activo', Tratamiento:'badge-Gestando', Desparasitacion:'badge-Vendido' };
 
     const rows = data.map(s => `
       <tr>
@@ -2392,7 +2392,7 @@ async function updateParto() {
       medicamento: document.getElementById('s-medicamento').value || null,
       dosis: document.getElementById('s-dosis').value || null,
       diagnostico: document.getElementById('s-diagnostico').value || null,
-      tratamiento: document.getElementById('s-tratamiento').value || null,
+      Tratamiento: document.getElementById('s-Tratamiento').value || null,
       observaciones: document.getElementById('s-observaciones').value || null,
       notas: document.getElementById('s-notas').value.trim() || null
     };
@@ -2420,7 +2420,7 @@ async function updateParto() {
     document.getElementById('es-medicamento').value = s.medicamento || '';
     document.getElementById('es-dosis').value = s.dosis || '';
     document.getElementById('es-diagnostico').value = s.diagnostico || '';
-    document.getElementById('es-tratamiento').value = s.tratamiento || '';
+    document.getElementById('es-Tratamiento').value = s.Tratamiento || '';
     document.getElementById('es-observaciones').value = s.observaciones || '';
     document.getElementById('es-notas').value = s.notas || '';
 
@@ -2435,7 +2435,7 @@ async function updateParto() {
       medicamento: document.getElementById('es-medicamento').value || null,
       dosis: document.getElementById('es-dosis').value || null,
       diagnostico: document.getElementById('es-diagnostico').value || null,
-      tratamiento: document.getElementById('es-tratamiento').value || null,
+      Tratamiento: document.getElementById('es-Tratamiento').value || null,
       observaciones: document.getElementById('es-observaciones').value || null,
       notas: document.getElementById('es-notas').value.trim() || null
     };
@@ -2515,7 +2515,7 @@ async function updateParto() {
 
     const current = el.value;
     const disponibles = animalesCache.filter(animal =>
-      animal.estado === 'activo' || animal.id === current
+      animal.estado === 'Activo' || animal.id === current
     );
     el.innerHTML = '<option value="">Seleccionar animal...</option>' +
       disponibles.map(animal =>
@@ -2598,7 +2598,7 @@ async function updateParto() {
 
     if (!payload.fecha) { showToast('La fecha es obligatoria', 'error'); return; }
     if (!payload.cliente) { showToast('El cliente es obligatorio', 'error'); return; }
-    if (!payload.id_animal) { showToast('Selecciona el animal vendido o de origen', 'error'); return; }
+    if (!payload.id_animal) { showToast('Selecciona el animal Vendido o de origen', 'error'); return; }
 
     const { id_animal, ...ventaPayload } = payload;
     const { data: venta, error: ventaError } = await db.from('ventas')
@@ -2624,7 +2624,7 @@ async function updateParto() {
     }
 
     const { error: animalError } = await db.from('animales')
-      .update({ estado: 'vendido' })
+      .update({ estado: 'Vendido' })
       .eq('id', id_animal);
     if (animalError) {
       showToast(`La venta se registró, pero no se pudo actualizar el estado del animal: ${animalError.message}`, 'error');
@@ -2729,7 +2729,7 @@ async function updateParto() {
       }
 
       const { error: newAnimalError } = await db.from('animales')
-        .update({ estado: 'vendido' })
+        .update({ estado: 'Vendido' })
         .eq('id', selectedAnimalId);
       if (newAnimalError) {
         showToast('El animal quedó vinculado, pero no se pudo actualizar su estado: ' + newAnimalError.message, 'error');
@@ -2748,7 +2748,7 @@ async function updateParto() {
         }
         if (!remainingDetails?.length) {
           const { error: restoreError } = await db.from('animales')
-            .update({ estado: 'activo' })
+            .update({ estado: 'Activo' })
             .eq('id', originalAnimalId);
           if (restoreError) {
             showToast('Se cambió el animal de la venta, pero no se pudo restaurar el estado del anterior: ' + restoreError.message, 'error');
@@ -2787,7 +2787,7 @@ async function updateParto() {
     const [animalsResult, reproResult, saludResult, ventasResult, produccionResult] = await Promise.all([
       db.from('animales').select('id,identificador,nombre,sexo,estado,estado_productivo'),
       db.from('reproduccion')
-        .select('fecha_parto_estimada, estado, hembra:id_hembra(identificador,nombre)')
+        .select('fecha_parto_estimada, estado, Hembra:id_Hembra(identificador,nombre)')
         .order('fecha_parto_estimada'),
       db.from('salud')
         .select('id,fecha,tipo,diagnostico,medicamento,animal:id_animal(identificador,nombre)')
@@ -2800,7 +2800,7 @@ async function updateParto() {
     const queryError = [animalsResult, reproResult, saludResult, ventasResult, produccionResult]
       .find(result => result.error)?.error;
     if (queryError) {
-      ['stat-total', 'stat-machos', 'stat-hembras', 'stat-gestando', 'stat-partos-proximos', 'stat-eventos-salud', 'stat-ventas-total', 'stat-pesos-mes']
+      ['stat-total', 'stat-Machos', 'stat-Hembras', 'stat-Gestando', 'stat-partos-proximos', 'stat-eventos-salud', 'stat-ventas-total', 'stat-pesos-mes']
         .forEach(id => { document.getElementById(id).textContent = '—'; });
       renderDashboardList('dashboard-births-list', [], 'No se pudo cargar la información.');
       renderDashboardList('dashboard-health-list', [], 'No se pudo cargar la información.');
@@ -2994,7 +2994,7 @@ async function updateParto() {
     const { animals, repro, salud, ventas, produccion } = snapshot;
     const today = new Date();
     const todayKey = dashboardDateKey(today);
-    const activos = animals.filter(animal => animal.estado === 'activo');
+    const Activos = animals.filter(animal => animal.estado === 'Activo');
     const saludPeriodo = filterDashboardPeriod(salud, range);
     const ventasPeriodo = filterDashboardPeriod(ventas, range);
     const produccionPeriodo = filterDashboardPeriod(produccion, range);
@@ -3004,7 +3004,7 @@ async function updateParto() {
     const ventasAnterior = previousRange ? filterDashboardPeriod(ventas, previousRange) : [];
     const produccionAnterior = previousRange ? filterDashboardPeriod(produccion, previousRange) : [];
     const partosProximos = repro.filter(record => {
-      if (record.estado !== 'gestando') return false;
+      if (record.estado !== 'Gestando') return false;
       const days = daysUntilDashboardDate(record.fecha_parto_estimada, todayKey);
       return days !== null && days >= 0 && days <= 30;
     });
@@ -3016,10 +3016,10 @@ async function updateParto() {
       previousRange
     );
 
-    document.getElementById('stat-total').textContent = activos.length;
-    document.getElementById('stat-machos').textContent = activos.filter(animal => animal.sexo === 'macho').length;
-    document.getElementById('stat-hembras').textContent = activos.filter(animal => animal.sexo === 'hembra').length;
-    document.getElementById('stat-gestando').textContent = repro.filter(record => record.estado === 'gestando').length;
+    document.getElementById('stat-total').textContent = Activos.length;
+    document.getElementById('stat-Machos').textContent = Activos.filter(animal => animal.sexo === 'Macho').length;
+    document.getElementById('stat-Hembras').textContent = Activos.filter(animal => animal.sexo === 'Hembra').length;
+    document.getElementById('stat-Gestando').textContent = repro.filter(record => record.estado === 'Gestando').length;
     document.getElementById('stat-partos-proximos').textContent = partosProximos.length;
     document.getElementById('stat-eventos-salud').textContent = saludPeriodo.length;
     document.getElementById('stat-ventas-total').textContent = formatMoney(totalVentasPeriodo);
@@ -3035,14 +3035,14 @@ async function updateParto() {
       `Actualizado ${today.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 
     const births = repro
-      .filter(record => record.estado === 'gestando')
+      .filter(record => record.estado === 'Gestando')
       .filter(record => record.fecha_parto_estimada)
       .sort((a, b) => a.fecha_parto_estimada.localeCompare(b.fecha_parto_estimada))
       .slice(0, 5)
       .map(record => {
         const days = daysUntilDashboardDate(record.fecha_parto_estimada, todayKey);
         return {
-          title: record.hembra?.identificador || 'Hembra sin identificador',
+          title: record.Hembra?.identificador || 'Hembra sin identificador',
           detail: days < 0 ? `Parto estimado vencido hace ${Math.abs(days)} días` :
             days === 0 ? 'Parto estimado para hoy' : `Parto estimado en ${days} días`,
           date: formatDate(record.fecha_parto_estimada),
@@ -3081,8 +3081,8 @@ async function updateParto() {
     const recordedAnimals = animals
       .filter(animal => recordedIds.has(animal.id))
       .sort((a, b) => {
-        if (a.estado === 'activo' && b.estado !== 'activo') return -1;
-        if (a.estado !== 'activo' && b.estado === 'activo') return 1;
+        if (a.estado === 'Activo' && b.estado !== 'Activo') return -1;
+        if (a.estado !== 'Activo' && b.estado === 'Activo') return 1;
         return (a.identificador || '').localeCompare(b.identificador || '', 'es');
       });
     const previousSelection = select.value;
@@ -3232,8 +3232,8 @@ async function updateParto() {
     const filteredAnimals = sex ? animals.filter(animal => animal.sexo === sex) : animals;
     const note = document.getElementById('chart-estado-note');
     if (note) {
-      const group = sex === 'macho' ? 'Machos' : sex === 'hembra' ? 'Hembras' : 'Todos los animales';
-      note.textContent = `${group}: distribución actual entre activos, vendidos y muertos.`;
+      const group = sex === 'Macho' ? 'Machos' : sex === 'Hembra' ? 'Hembras' : 'Todos los animales';
+      note.textContent = `${group}: distribución actual entre Activos, Vendidos y Muertos.`;
     }
     buildChartEstado(filteredAnimals);
   }
@@ -3242,21 +3242,21 @@ async function updateParto() {
     if (!animals.length) {
       const sex = document.getElementById('chart-estado-sexo')?.value;
       showDashboardChartEmpty('chartEstado', sex
-        ? `No hay animales registrados en el grupo seleccionado (${sex === 'macho' ? 'machos' : 'hembras'}).`
+        ? `No hay animales registrados en el grupo seleccionado (${sex === 'Macho' ? 'Machos' : 'Hembras'}).`
         : 'Registra animales para consultar el estado del rebaño.');
       return;
     }
-    const activos = animals.filter(a => a.estado === 'activo').length;
-    const vendidos = animals.filter(a => a.estado === 'vendido').length;
-    const muertos = animals.filter(a => a.estado === 'muerto').length;
-    buildChart('chartEstado', 'doughnut', ['Activos', 'Vendidos', 'Muertos'], [{ label: 'Animales', data: [activos, vendidos, muertos], backgroundColor: ['#2E7D4F','#C8A96A','#C0392B'], borderWidth: 0 }]);
+    const Activos = animals.filter(a => a.estado === 'Activo').length;
+    const Vendidos = animals.filter(a => a.estado === 'Vendido').length;
+    const Muertos = animals.filter(a => a.estado === 'Muerto').length;
+    buildChart('chartEstado', 'doughnut', ['Activos', 'Vendidos', 'Muertos'], [{ label: 'Animales', data: [Activos, Vendidos, Muertos], backgroundColor: ['#2E7D4F','#C8A96A','#C0392B'], borderWidth: 0 }]);
   }
 
   function buildChartReproduccion(records) {
     const statusLabels = [
-      { value: 'gestando', label: 'Gestando', color: '#2E7D4F' },
-      { value: 'pario', label: 'Parieron', color: '#2980B9' },
-      { value: 'fallido', label: 'Fallidos', color: '#C0392B' }
+      { value: 'Gestando', label: 'Gestando', color: '#2E7D4F' },
+      { value: 'Pario', label: 'Parieron', color: '#2980B9' },
+      { value: 'Fallido', label: 'Fallidos', color: '#C0392B' }
     ];
     const counts = statusLabels.map(status =>
       records.filter(record => record.estado === status.value).length
@@ -3277,9 +3277,9 @@ async function updateParto() {
     const counts = {};
     const typeLabels = {
       enfermedad: 'Enfermedad',
-      vacuna: 'Vacuna',
-      tratamiento: 'Tratamiento',
-      desparasitacion: 'Desparasitación'
+      Vacuna: 'Vacuna',
+      Tratamiento: 'Tratamiento',
+      Desparasitacion: 'Desparasitación'
     };
     (data || []).forEach(record => {
       const type = typeLabels[record.tipo] || 'Sin tipo';
